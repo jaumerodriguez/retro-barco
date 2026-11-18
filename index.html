@@ -260,6 +260,22 @@
   .group-item .tx { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
   .group-item .ft { display: flex; justify-content: flex-end; }
 
+  /* SUGERENCIAS CON CLAUDE */
+  body:not(.can-ai) .ai-section { display: none; }
+  .ai-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .ai-step { background: var(--well); border-radius: var(--r-card); padding: 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .ai-step .n { font-size: 13px; font-weight: 700; color: var(--blue); }
+  .ai-step p { font-size: 14px; color: var(--ink-2); flex: 1; }
+  .sug-item { padding: 12px 14px; border: 1px solid var(--stroke); border-radius: var(--r-note); display: flex; gap: 12px; cursor: pointer; }
+  .sug-item:has(input:checked) { border-color: var(--blue-150); background: var(--blue-050); }
+  .sug-item input { width: 20px; height: 20px; accent-color: var(--blue); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+  .sug-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .sug-body .why { font-size: 13px; color: var(--muted); }
+  .sug-body ul { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .sug-body li { padding-left: 10px; border-left: 2px solid var(--stroke); }
+  .sug-body li.main { border-color: var(--blue); font-weight: 600; }
+  .sug-head { font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+
   /* ARRASTRAR */
   .note.dragging { opacity: .35; transform: scale(.97); box-shadow: none; cursor: grabbing; }
   .note.merge-target { outline: 3px solid var(--blue); outline-offset: 3px; transform: scale(1.03); box-shadow: var(--shadow-md); z-index: 6; }
@@ -468,6 +484,26 @@
     <div class="action-list" id="actionList"></div>
   </section>
 
+  <section class="card section ai-section">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <h2>Sugerencias con Claude.</h2>
+      <p class="lead">Exporta las notas (sin autores), pásaselas a Claude y vuelve a importar su respuesta. Nada se aplica hasta que lo apruebes, y cualquier grupo se deshace con «Separar».</p>
+    </div>
+    <div class="ai-steps">
+      <div class="ai-step">
+        <span class="n">Paso 1</span>
+        <p>Descarga las notas, los grupos, los votos (al cerrar) y los accionables, con las instrucciones para Claude incluidas.</p>
+        <button class="btn btn-secondary" data-act="exportAI"><svg width="18" height="18" aria-hidden="true"><use href="#i-download"/></svg>Exportar para Claude</button>
+      </div>
+      <div class="ai-step">
+        <span class="n">Paso 2</span>
+        <p>Importa el archivo que te devuelva Claude: verás cada grupo y accionable propuesto para marcar los que quieras.</p>
+        <button class="btn btn-primary" data-act="importAI"><svg width="18" height="18" aria-hidden="true"><use href="#i-upload"/></svg>Importar sugerencias</button>
+        <input type="file" id="sugInput" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </section>
+
   <section class="card section import-section">
     <div style="display:flex;flex-direction:column;gap:4px;">
       <h2>Importar archivos .retro antiguos.</h2>
@@ -503,6 +539,18 @@
     <p style="font-size:13px;color:var(--muted);margin-top:-6px;">Notas agrupadas. Puedes separarlas una a una.</p>
     <div id="mergedList" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div class="modal-actions"><button class="btn btn-outline" data-act="closeMerged">Cerrar</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="sugModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sugTitle" style="width:min(680px,100%);">
+    <h3 id="sugTitle">Sugerencias de Claude</h3>
+    <p style="font-size:13px;color:var(--muted);margin-top:-6px;" id="sugIntro">Marca las que quieras aplicar.</p>
+    <div id="sugList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" data-act="closeSug">Cancelar</button>
+      <button class="btn btn-primary" data-act="applySug" id="applySugBtn">Aplicar seleccionadas</button>
+    </div>
   </div>
 </div>
 
@@ -822,6 +870,7 @@ function renderAll() {
   pendingRender = false;
   document.body.classList.toggle('can-add', !!sala && canAdd());
   document.body.classList.toggle('can-import', !!sala && canImport());
+  document.body.classList.toggle('can-ai', !!sala && isFac() && phase() !== 'write');
   renderPhaseBar();
   renderBoard();
   renderActions();
@@ -1181,6 +1230,168 @@ function exportSummaryMd() {
   a.click();
 }
 
+/* ============ SUGERENCIAS CON CLAUDE (exportar → Claude → importar) ============ */
+// Ids cortos para que Claude los copie sin errores; al importar se resuelven por prefijo único.
+const shortId = id => id.slice(0, 6);
+function resolveShort(s) {
+  s = String(s || '').trim();
+  if (!s) return null;
+  const hits = postits.filter(p => p.id === s || p.id.startsWith(s));
+  return hits.length === 1 ? hits[0].id : null;
+}
+function rootMap() {
+  const m = new Map();
+  computeGroups().forEach((g, rootId) => { m.set(rootId, rootId); g.members.forEach(x => m.set(x.id, rootId)); });
+  return m;
+}
+
+function exportForAI() {
+  if (!sala) return;
+  const groups = computeGroups(), counts = voteCounts();
+  const withVotes = phase() === 'close';
+  const notas = [];
+  [...groups.values()].sort((a, b) => ts(a.root.createdAt) - ts(b.root.createdAt)).forEach(g => {
+    const n = { id: shortId(g.root.id), zona: g.root.zone, texto: g.root.text };
+    if (withVotes) n.votosDelGrupo = groupIds(g).reduce((s, id) => s + (counts[id] || 0), 0);
+    notas.push(n);
+    g.members.forEach(m => notas.push({ id: shortId(m.id), zona: m.zone, texto: m.text, yaAgrupadaEn: shortId(g.root.id) }));
+  });
+  const payload = {
+    _type: 'retro-barco-para-ia', _version: 1,
+    sala: SALA, titulo: (sala && sala.title) || '', fase: phase(), exportadoEn: new Date().toISOString(),
+    instrucciones: [
+      'Eres el asistente de una retrospectiva entre Product Support y Desarrollo con el formato del barco.',
+      'Zonas: wind = Viento (lo que nos impulsa), island = Isla (objetivo ideal), anchor = Ancla (lo que nos frena), rocks = Rocas (riesgos).',
+      '1) GRUPOS: propón grupos de notas que hablen de la misma idea o del mismo problema. Solo cuando la relación sea clara; no fuerces grupos ni agrupes por simple coincidencia de palabras.',
+      '   "principal" es la nota que mejor resume el grupo (su zona será la del grupo). Normalmente agrupa dentro de la misma zona; mezcla zonas solo si es exactamente la misma idea.',
+      '   Usa EXACTAMENTE los id de "notas". No propongas grupos que ya existan (notas con yaAgrupadaEn).',
+      '2) ACCIONABLES: propón entre 3 y 5 acciones concretas (qué + quién + cuándo), priorizando las notas con más votos si hay votos.',
+      '   Deja "responsable" vacío si no se deduce de las notas; "fecha" en formato AAAA-MM-DD o vacía. No repitas accionables que ya existan.',
+      'Responde SOLO con un JSON con la forma de "formatoRespuesta", sin texto antes ni después.'
+    ].join('\n'),
+    notas,
+    accionablesExistentes: actions.map(a => ({ texto: a.text, responsable: a.owner || '', fecha: a.due || '', hecho: !!a.done })),
+    formatoRespuesta: {
+      _type: 'retro-barco-sugerencias', sala: SALA,
+      grupos: [{ titulo: 'Nombre corto del tema', principal: 'id', notas: ['id', 'id'], motivo: 'Por qué van juntas, en una frase' }],
+      accionables: [{ texto: 'Acción concreta', responsable: '', fecha: '', notasRelacionadas: ['id'] }]
+    }
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+  a.download = 'retro-para-claude-' + (sala.title ? slug(sala.title) : SALA) + '.json';
+  a.click();
+  showToast('Exportado. Pásale el archivo a Claude y pídele sugerencias', 'success');
+}
+
+let pendingSug = null;
+async function handleSuggestions(file) {
+  let data;
+  try {
+    const raw = (await file.text()).trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
+    data = JSON.parse(raw);
+  } catch (_) { showToast('El archivo no es un JSON válido', 'warning'); return; }
+  if (!data || data._type !== 'retro-barco-sugerencias') { showToast('No es un archivo de sugerencias de la retro', 'warning'); return; }
+  if (data.sala && data.sala !== SALA && !confirm('Estas sugerencias son de otra sala («' + data.sala + '»). ¿Importarlas igualmente?')) return;
+  const roots = rootMap();
+  let unresolved = 0;
+  const grupos = (Array.isArray(data.grupos) ? data.grupos : []).map(g => {
+    const principal = resolveShort(g && g.principal);
+    if (!principal) { unresolved++; return null; }
+    const seen = new Set([roots.get(principal)]);
+    const notas = [];
+    (Array.isArray(g.notas) ? g.notas : []).forEach(s => {
+      const id = resolveShort(s);
+      if (!id) { unresolved++; return; }
+      const r = roots.get(id);
+      if (seen.has(r)) return;          // ya está en el mismo grupo
+      seen.add(r); notas.push(id);
+    });
+    return notas.length ? { titulo: String(g.titulo || 'Grupo').slice(0, 80), motivo: String(g.motivo || '').slice(0, 300), principal, notas } : null;
+  }).filter(Boolean);
+  const existing = new Set(actions.map(a => a.text.trim().toLowerCase()));
+  const acciones = (Array.isArray(data.accionables) ? data.accionables : []).map(a => ({
+    text: String((a && a.texto) || '').trim().slice(0, 300),
+    owner: String((a && a.responsable) || '').trim().slice(0, 80),
+    due: /^\d{4}-\d{2}-\d{2}$/.test((a && a.fecha) || '') ? a.fecha : ''
+  })).filter(a => a.text && !existing.has(a.text.toLowerCase()));
+  if (!grupos.length && !acciones.length) {
+    showToast('No hay sugerencias aplicables' + (unresolved ? ' (' + unresolved + ' notas no encontradas)' : ''), 'warning');
+    return;
+  }
+  pendingSug = { grupos, acciones, unresolved };
+  renderSuggestions();
+}
+
+function renderSuggestions() {
+  const { grupos, acciones, unresolved } = pendingSug;
+  const byId = new Map(postits.map(p => [p.id, p]));
+  const canGroup = canRegroup();
+  let html = '';
+  if (grupos.length) {
+    html += '<div class="sug-head">Grupos (' + grupos.length + ')</div>';
+    if (!canGroup) html += '<p style="font-size:13px;color:#a61e1e;">En esta fase no se puede agrupar. Vuelve a «Compartir y agrupar» para aplicarlos.</p>';
+    grupos.forEach((g, i) => {
+      const main = byId.get(g.principal);
+      html += '<label class="sug-item"><input type="checkbox" data-sug="g' + i + '"' + (canGroup ? ' checked' : ' disabled') + '>' +
+        '<span class="sug-body"><b>' + escH(g.titulo) + '</b>' + (g.motivo ? '<span class="why">' + escH(g.motivo) + '</span>' : '') +
+        '<ul><li class="main">' + escH(main ? main.text : '') + '</li>' +
+        g.notas.map(id => '<li>' + escH((byId.get(id) || {}).text || '') + '</li>').join('') + '</ul></span></label>';
+    });
+  }
+  if (acciones.length) {
+    html += '<div class="sug-head">Accionables (' + acciones.length + ')</div>';
+    acciones.forEach((a, i) => {
+      html += '<label class="sug-item"><input type="checkbox" data-sug="a' + i + '" checked>' +
+        '<span class="sug-body"><b>' + escH(a.text) + '</b><span class="why">' +
+        escH(a.owner || 'Sin responsable') + ' · ' + escH(a.due ? fmtDate(a.due) : 'Sin fecha') + '</span></span></label>';
+    });
+  }
+  $('sugIntro').textContent = 'Marca las que quieras aplicar.' + (unresolved ? ' Se han ignorado ' + unresolved + ' referencias a notas que no existen.' : '');
+  $('sugList').innerHTML = html;
+  $('sugModal').classList.add('show');
+}
+function closeSug() { $('sugModal').classList.remove('show'); pendingSug = null; }
+
+async function applySuggestions() {
+  if (!pendingSug) return;
+  const picked = new Set([...document.querySelectorAll('#sugList input[data-sug]:checked')].map(i => i.dataset.sug));
+  const groups = computeGroups();
+  const roots = rootMap();
+  const batch = writeBatch(db);
+  const touched = new Set();
+  let nGroups = 0, nActions = 0;
+  pendingSug.grupos.forEach((g, i) => {
+    if (!picked.has('g' + i) || !canRegroup()) return;
+    const target = roots.get(g.principal);
+    let changed = false;
+    g.notas.forEach(id => {
+      const r = roots.get(id);
+      if (!r || r === target) return;
+      // Todo el grupo de origen pasa a colgar del principal destino.
+      [r, ...((groups.get(r) || { members: [] }).members.map(m => m.id))].forEach(x => {
+        if (touched.has(x) || x === target) return;
+        touched.add(x);
+        batch.update(doc(colP(), x), { mergedInto: target });
+        roots.set(x, target);
+      });
+      changed = true;
+    });
+    if (changed) nGroups++;
+  });
+  pendingSug.acciones.forEach((a, i) => {
+    if (!picked.has('a' + i)) return;
+    batch.set(doc(colA()), { text: a.text, owner: a.owner, due: a.due, done: false, createdBy: user.uid, createdAt: serverTimestamp() });
+    nActions++;
+  });
+  if (!nGroups && !nActions) { closeSug(); return; }
+  try {
+    await batch.commit();
+    closeSug();
+    showToast('Aplicado: ' + nGroups + ' grupos y ' + nActions + ' accionables', 'success');
+  } catch (e) { fail(e); }
+}
+
 /* ============ CAMBIO DE FASE ============ */
 function setPhase(id) {
   if (!isFac() || id === phase()) return;
@@ -1215,6 +1426,10 @@ document.addEventListener('click', e => {
       if (confirm('¿Eliminar este accionable?')) deleteDoc(doc(colA(), id)).catch(fail);
       break;
     case 'phase': setPhase(id); break;
+    case 'exportAI': exportForAI(); break;
+    case 'importAI': $('sugInput').click(); break;
+    case 'closeSug': closeSug(); break;
+    case 'applySug': applySuggestions(); break;
     case 'copyLink':
       navigator.clipboard.writeText(location.href)
         .then(() => showToast('Enlace copiado. Pásalo al equipo', 'success'))
@@ -1239,11 +1454,13 @@ document.addEventListener('change', e => {
   }
 });
 $('mergedModal').addEventListener('click', function (e) { if (e.target === this) closeGroup(); });
+$('sugModal').addEventListener('click', function (e) { if (e.target === this) closeSug(); });
+$('sugInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleSuggestions(f); });
 $('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
 $('joinInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinSala(); });
 $('actText').addEventListener('keydown', e => { if (e.key === 'Enter') addAction(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); closeGroup(); }
+  if (e.key === 'Escape') { closeModal(); closeGroup(); if (pendingSug) closeSug(); }
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && $('modal').classList.contains('show')) savePostit();
 });
 window.addEventListener('popstate', () => location.reload());
