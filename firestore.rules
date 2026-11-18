@@ -16,8 +16,10 @@ service cloud.firestore {
     function facilita(s) { return salaDe(s).facilitator == uid(); }
 
     function salaValida(d) {
-      return d.keys().hasOnly(['facilitator', 'facilitatorName', 'phase', 'maxVotes', 'title', 'createdAt'])
+      return d.keys().hasOnly(['facilitator', 'facilitatorName', 'phase', 'maxVotes', 'title', 'createdAt', 'retroDate', 'nextRetroDate'])
         && d.phase in ['write', 'reveal', 'vote', 'close']
+        && d.get('retroDate', '') is string && d.get('retroDate', '').size() <= 10
+        && d.get('nextRetroDate', '') is string && d.get('nextRetroDate', '').size() <= 10
         && d.maxVotes is int && d.maxVotes >= 1 && d.maxVotes <= 10
         && d.facilitatorName is string && d.facilitatorName.size() <= 80
         && d.get('title', '') is string && d.get('title', '').size() <= 40;

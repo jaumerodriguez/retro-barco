@@ -109,6 +109,13 @@
   .phase-step.active .dot { background: #fff; color: var(--blue); }
   .phase-step:disabled { cursor: default; }
   .phase-step:not(:disabled):not(.active):hover { box-shadow: var(--shadow-md); }
+  .phase-dates { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
+  .phase-dates:empty { display: none; }
+  .phase-dates label { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .phase-dates input {
+    height: 36px; border-radius: var(--r-ctl); border: 1px solid var(--stroke-strong); padding: 0 8px;
+    font: inherit; font-size: 13px; font-weight: 400; color: var(--ink); background: #fff;
+  }
   .phase-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
   .phase-meta .right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .votes-chip {
@@ -367,6 +374,14 @@
           <label class="field">Nombre de la retro (opcional)
             <input id="newTitle" maxlength="40" placeholder="Ej. PS-Devs diciembre">
           </label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+            <label class="field">Fecha de la retro
+              <input id="newDate" type="date">
+            </label>
+            <label class="field">Próxima retro (opcional)
+              <input id="newNext" type="date">
+            </label>
+          </div>
           <button class="btn btn-primary btn-lg btn-full" data-act="createSala">Crear sala y facilitar <svg width="16" height="9" aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
         <div class="divider">o únete a una</div>
@@ -420,6 +435,7 @@
 <div class="page">
   <nav class="card phasebar" aria-label="Fases de la retro">
     <div class="phase-steps" id="phaseSteps"></div>
+    <div class="phase-dates" id="phaseDates"></div>
     <div class="phase-meta">
       <span id="phaseInfo"></span>
       <div class="right"><span id="votesChip"></span><span id="nextPhase"></span></div>
@@ -707,6 +723,7 @@ function showGate(card) {
 function hideGate() { $('gate').classList.add('hide'); }
 function showPortada(mode) {
   $('portadaErr').textContent = '';
+  if (!$('newDate').value) $('newDate').value = todayIso();
   if (mode === 'missing') {
     $('missingText').textContent = 'No hay ninguna retro abierta con el código «' + SALA + '». Revisa el enlace o créala tú.';
     showGate('cardMissing');
@@ -746,11 +763,16 @@ onAuthStateChanged(auth, async u => {
   if (SALA) openSala(); else showPortada('new');
 });
 
-async function createSala(id, title) {
+const isoDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
+const todayIso = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+function addDays(iso, n) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+
+async function createSala(id, title, retroDate, nextRetroDate) {
   try {
     await setDoc(doc(db, 'salas', id), {
       facilitator: user.uid, facilitatorName: myName(), phase: 'write',
-      maxVotes: MAX_VOTES, title: String(title || '').slice(0, 40), createdAt: serverTimestamp()
+      maxVotes: MAX_VOTES, title: String(title || '').slice(0, 40), createdAt: serverTimestamp(),
+      retroDate: isoDate(retroDate) || todayIso(), nextRetroDate: isoDate(nextRetroDate)
     });
     if (SALA !== id) {
       SALA = id;
@@ -913,6 +935,7 @@ function renderPhaseBar() {
   $('phaseInfo').innerHTML = !sala ? '' : isFac()
     ? 'Facilitas tú: pulsa una fase o el botón para avanzar; todos lo verán al momento.'
     : 'Facilita <b>' + escH(sala.facilitatorName || '—') + '</b>, que es quien cambia de fase.';
+  renderDates();
   const chip = $('votesChip');
   if (phase() === 'vote') {
     const used = myVoteIds().length, left = MAX_VOTES - used;
@@ -925,6 +948,22 @@ function renderPhaseBar() {
   $('nextPhase').innerHTML = isFac() && next
     ? '<button type="button" class="btn btn-primary" data-act="phase" data-id="' + next.id + '">Pasar a ' + escH(next.label) + ' ' + icon('arrow', 16, 9) + '</button>'
     : '';
+}
+
+// Solo repinta si cambian las fechas o el rol: así no se cierra el selector de fecha mientras alguien lo usa.
+let lastDatesKey = null;
+function renderDates() {
+  const box = $('phaseDates');
+  if (!sala) { box.innerHTML = ''; lastDatesKey = null; return; }
+  const r = sala.retroDate || '', n = sala.nextRetroDate || '';
+  const key = [isFac(), r, n].join('|');
+  if (key === lastDatesKey) return;
+  lastDatesKey = key;
+  box.innerHTML = isFac()
+    ? '<label>Fecha de la retro <input type="date" data-sala-date="retroDate" value="' + escH(r) + '"></label>' +
+      '<label>Próxima retro <input type="date" data-sala-date="nextRetroDate" value="' + escH(n) + '"></label>'
+    : (r ? '<span>Retro del <b>' + escH(fmtDate(r)) + '</b></span>' : '') +
+      (n ? '<span>Próxima retro: <b>' + escH(fmtDate(n)) + '</b></span>' : '');
 }
 
 function renderBoard() {
@@ -1034,7 +1073,7 @@ function addAction() {
   const text = $('actText').value.trim();
   if (!text) { showToast('Describe la acción', 'warning'); $('actText').focus(); return; }
   addDoc(colA(), {
-    text, owner: $('actOwner').value.trim(), due: $('actDue').value, done: false,
+    text, owner: $('actOwner').value.trim(), due: isoDate($('actDue').value) || (sala && sala.nextRetroDate) || '', done: false,
     createdBy: user.uid, createdAt: serverTimestamp()
   }).catch(fail);
   $('actText').value = ''; $('actOwner').value = ''; $('actDue').value = '';
@@ -1071,7 +1110,7 @@ function openActionModal(id) {
   editingActionId = id;
   $('eaText').value = a.text || '';
   $('eaOwner').value = a.owner || '';
-  $('eaDue').value = a.due || '';
+  $('eaDue').value = a.due || (sala && sala.nextRetroDate) || '';
   $('actModal').classList.add('show');
   setTimeout(() => $('eaOwner').focus(), 50);
 }
@@ -1253,8 +1292,10 @@ function exportSummaryMd() {
   const groups = computeGroups(), counts = voteCounts();
   const total = g => groupIds(g).reduce((n, id) => n + (counts[id] || 0), 0);
   const showVotes = phase() === 'close';
-  let md = '# Retro del Barco · Product Support ↔ Desarrollo\n_' + new Date().toLocaleDateString('es-ES') +
-    ' · sala ' + (sala && sala.title ? sala.title + ' (' + SALA + ')' : SALA) + '_\n\n';
+  let md = '# Retro del Barco · Product Support ↔ Desarrollo\n_' +
+    (sala && sala.retroDate ? fmtDate(sala.retroDate) : new Date().toLocaleDateString('es-ES')) +
+    ' · sala ' + (sala && sala.title ? sala.title + ' (' + SALA + ')' : SALA) +
+    (sala && sala.nextRetroDate ? ' · próxima retro: ' + fmtDate(sala.nextRetroDate) : '') + '_\n\n';
   if (phase() === 'write') md += '> Exportado en la fase «Escribir»: solo incluye tus notas.\n\n';
   Object.entries(ZONES).forEach(([z, info]) => {
     md += '## ' + info.name + '\n';
@@ -1308,9 +1349,14 @@ function exportForAI() {
   postits.forEach(p => p.author && participantes.add(p.author));
   Object.values(votes).forEach(v => v.name && participantes.add(v.name));
   if (sala.facilitatorName) participantes.add(sala.facilitatorName);
+  const fechaRetro = sala.retroDate ||
+    (sala.createdAt && typeof sala.createdAt.toDate === 'function' ? sala.createdAt.toDate().toISOString().slice(0, 10) : todayIso());
+  const proximaRetro = sala.nextRetroDate || '';
   const payload = {
     _type: 'retro-barco-para-ia', _version: 1,
     sala: SALA, titulo: (sala && sala.title) || '', fase: phase(), exportadoEn: new Date().toISOString(),
+    fechaRetro, proximaRetro,
+    fechaPorDefecto: proximaRetro || addDays(fechaRetro, 14),
     instrucciones: [
       'Eres el asistente de una retrospectiva entre Product Support y Desarrollo con el formato del barco.',
       'Zonas: wind = Viento (lo que nos impulsa), island = Isla (objetivo ideal), anchor = Ancla (lo que nos frena), rocks = Rocas (riesgos).',
@@ -1320,7 +1366,8 @@ function exportForAI() {
       '2) ACCIONABLES: propón entre 3 y 5 acciones concretas (qué + quién + cuándo), priorizando las notas con más votos si hay votos.',
       '   "responsable": elige UNA persona de "participantes", escrita exactamente igual. Normalmente quien escribió las notas relacionadas o quien está más cerca del problema;',
       '   si varias personas encajan, elige la que más notas tenga sobre ese tema. Déjalo vacío solo si no hay ninguna base.',
-      '   "fecha": AAAA-MM-DD (por defecto, 2 semanas después de "exportadoEn") o vacía. No repitas accionables que ya existan.',
+      '   "fecha": AAAA-MM-DD. Usa "fechaPorDefecto" (la próxima retro, cuando se revisan los accionables; o 2 semanas después de "fechaRetro" si no hay próxima).',
+      '   Adelántala para lo urgente o lo que se resuelve en pocos días; nunca antes de "fechaRetro" ni después de "proximaRetro" si existe. No repitas accionables que ya existan.',
       '   Añade "motivoResponsable": una frase corta explicando por qué esa persona.',
       'Responde SOLO con un JSON con la forma de "formatoRespuesta", sin texto antes ni después.'
     ].join('\n'),
@@ -1403,7 +1450,7 @@ function renderSuggestions() {
         '<span class="sug-body" style="flex:1"><label for="sug-a' + i + '" style="cursor:pointer"><b>' + escH(a.text) + '</b></label>' +
         '<span class="sug-fields">' +
           '<label class="field">Responsable<input data-sug-owner="' + i + '" list="peopleList" maxlength="80" placeholder="Nombre" value="' + escH(a.owner) + '"></label>' +
-          '<label class="field">Fecha<input data-sug-due="' + i + '" type="date" value="' + escH(a.due) + '"></label>' +
+          '<label class="field">Fecha<input data-sug-due="' + i + '" type="date" value="' + escH(a.due || (sala && sala.nextRetroDate) || '') + '"></label>' +
         '</span>' + (a.why ? '<span class="why">' + escH(a.why) + '</span>' : '') + '</span></div>';
     });
   }
@@ -1507,10 +1554,12 @@ document.addEventListener('click', e => {
     case 'logout': signOut(auth); break;
     case 'createSala': {
       const title = $('newTitle').value.trim();
-      createSala((slug(title) || 'retro-' + new Date().toISOString().slice(0, 10)) + '-' + randomId(6), title);
+      const next = isoDate($('newNext').value), date = isoDate($('newDate').value) || todayIso();
+      if (next && next <= date) { $('portadaErr').textContent = 'La próxima retro tiene que ser posterior a la fecha de la retro.'; break; }
+      createSala((slug(title) || 'retro-' + date) + '-' + randomId(6), title, date, next);
       break;
     }
-    case 'createMissing': createSala(SALA, ''); break;
+    case 'createMissing': createSala(SALA, '', todayIso(), ''); break;
     case 'joinSala': joinSala(); break;
   }
 });
@@ -1518,6 +1567,15 @@ document.addEventListener('change', e => {
   const t = e.target;
   if (t.dataset && t.dataset.act === 'toggleAction') {
     updateDoc(doc(colA(), t.dataset.id), { done: t.checked }).catch(fail);
+  }
+  if (t.dataset && t.dataset.salaDate && isFac()) {
+    const key = t.dataset.salaDate, val = isoDate(t.value);
+    const other = key === 'retroDate' ? (sala.nextRetroDate || '') : (sala.retroDate || '');
+    if (val && other && (key === 'retroDate' ? val >= other : val <= other)) {
+      showToast('La próxima retro tiene que ser posterior a la fecha de la retro', 'warning');
+      lastDatesKey = null; renderDates(); return;
+    }
+    updateDoc(doc(db, 'salas', SALA), { [key]: val }).catch(fail);
   }
 });
 $('mergedModal').addEventListener('click', function (e) { if (e.target === this) closeGroup(); });
