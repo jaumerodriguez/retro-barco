@@ -661,12 +661,18 @@ function openSala() {
   firstLoad = true;
   $('salaName').textContent = SALA;
   let sideSubs = false;
-  unsubs.push(onSnapshot(doc(db, 'salas', SALA), snap => {
-    if (!snap.exists()) { sala = null; setLive(''); showPortada('missing'); return; }
+  // includeMetadataChanges: así recibimos el aviso cuando el servidor confirma un cambio de fase.
+  unsubs.push(onSnapshot(doc(db, 'salas', SALA), { includeMetadataChanges: true }, snap => {
+    if (!snap.exists()) {
+      if (snap.metadata.hasPendingWrites) return;
+      sala = null; setLive(''); showPortada('missing'); return;
+    }
     hidePortada();
     sala = snap.data();
     if (sala.title) $('salaName').textContent = sala.title + ' · ' + SALA;
-    ensurePostitSub();
+    // No cambiamos la consulta de post-its hasta que el servidor haya confirmado la fase:
+    // si no, pediríamos "todos" mientras el servidor sigue en "Escribir" y lo denegaría.
+    if (!snap.metadata.hasPendingWrites) ensurePostitSub();
     if (!sideSubs) {
       sideSubs = true;
       unsubs.push(onSnapshot(colV(), s => {
@@ -693,10 +699,20 @@ function ensurePostitSub() {
   postits = [];
   const q = mode === 'mine' ? query(colP(), where('createdBy', '==', user.uid)) : colP();
   unsubP = onSnapshot(q, snap => {
+    pRetries = 0;
     postits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     scheduleRender();
-  }, onSubErr);
+  }, err => {
+    // Un cambio de fase recién hecho puede tardar un instante en llegar a las reglas: reintentamos.
+    if (err.code === 'permission-denied' && pRetries < 4) {
+      pRetries++; unsubP = null; pMode = null;
+      setTimeout(ensurePostitSub, 800 * pRetries);
+      return;
+    }
+    onSubErr(err);
+  });
 }
+let pRetries = 0;
 
 /* ============ GRUPOS Y VOTOS ============ */
 function computeGroups() {
