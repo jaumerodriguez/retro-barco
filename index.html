@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retro del Barco · Product Support ↔ Desarrollo</title>
+<title>Retro del Barco · Retrospectiva de equipo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -342,9 +342,9 @@
   <main>
     <section class="hero">
       <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="eyebrow" style="color:var(--ink-2)">Product Support ↔ Desarrollo</div>
+        <div class="eyebrow" style="color:var(--ink-2)">Retrospectiva de equipo</div>
         <h1>Retro del Barco.</h1>
-        <p class="lead">Menos ruido entre PS y Devs, más foco en lo que llega bien documentado. Una sala, cuatro fases, en directo.</p>
+        <p class="lead">Mira atrás con tu equipo, decide qué mejorar y sal con acciones claras. Una sala, cuatro fases, en directo.</p>
       </div>
       <ol class="steps">
         <li><span class="n">01</span><b>Escribir</b><span>Cada uno anota sus ideas sin ver las de los demás.</span></li>
@@ -372,7 +372,7 @@
         <div style="display:flex;flex-direction:column;gap:12px;">
           <h2>Crea una sala.</h2>
           <label class="field">Nombre de la retro (opcional)
-            <input id="newTitle" maxlength="40" placeholder="Ej. PS-Devs diciembre">
+            <input id="newTitle" maxlength="40" placeholder="Ej. PS ↔ Soporte N1 · diciembre">
           </label>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
             <label class="field">Fecha de la retro
@@ -446,7 +446,7 @@
     <section class="card zone" data-zone="wind">
       <div class="zone-head">
         <div class="zone-well"><svg width="24" height="24" aria-hidden="true"><use href="#i-wind"/></svg></div>
-        <div class="zone-text"><span class="eyebrow">Viento</span><h2>Qué nos impulsa.</h2><span class="sub">Lo que ya funciona bien entre PS y Devs</span></div>
+        <div class="zone-text"><span class="eyebrow">Viento</span><h2>Qué nos impulsa.</h2><span class="sub">Lo que ya funciona bien y queremos mantener</span></div>
         <span class="zone-count" data-count="wind"></span>
         <button class="btn btn-secondary zone-add" data-act="add" data-zone="wind" aria-label="Añadir nota en Viento"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"/></svg>Nota</button>
       </div>
@@ -455,7 +455,7 @@
     <section class="card zone" data-zone="island">
       <div class="zone-head">
         <div class="zone-well"><svg width="24" height="24" aria-hidden="true"><use href="#i-palm"/></svg></div>
-        <div class="zone-text"><span class="eyebrow">Isla</span><h2>Nuestro objetivo.</h2><span class="sub">Cómo queremos que sea la colaboración ideal</span></div>
+        <div class="zone-text"><span class="eyebrow">Isla</span><h2>Nuestro objetivo.</h2><span class="sub">Cómo sería nuestra forma ideal de trabajar</span></div>
         <span class="zone-count" data-count="island"></span>
         <button class="btn btn-secondary zone-add" data-act="add" data-zone="island" aria-label="Añadir nota en Isla"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"/></svg>Nota</button>
       </div>
@@ -464,7 +464,7 @@
     <section class="card zone" data-zone="anchor">
       <div class="zone-head">
         <div class="zone-well"><svg width="24" height="24" aria-hidden="true"><use href="#i-anchor"/></svg></div>
-        <div class="zone-text"><span class="eyebrow">Ancla</span><h2>Qué nos frena.</h2><span class="sub">Tickets mal documentados, información incompleta, ruido</span></div>
+        <div class="zone-text"><span class="eyebrow">Ancla</span><h2>Qué nos frena.</h2><span class="sub">Lo que hoy nos ralentiza en el día a día</span></div>
         <span class="zone-count" data-count="anchor"></span>
         <button class="btn btn-secondary zone-add" data-act="add" data-zone="anchor" aria-label="Añadir nota en Ancla"><svg width="16" height="16" aria-hidden="true"><use href="#i-plus"/></svg>Nota</button>
       </div>
@@ -488,7 +488,7 @@
     </div>
     <div class="action-form">
       <label class="field">Acción
-        <input id="actText" maxlength="300" placeholder="Ej. plantilla obligatoria de tickets PS → Devs">
+        <input id="actText" maxlength="300" placeholder="Ej. plantilla común para documentar los casos">
       </label>
       <label class="field">Responsable
         <input id="actOwner" maxlength="80" list="peopleList" placeholder="Nombre">
@@ -1292,7 +1292,7 @@ function exportSummaryMd() {
   const groups = computeGroups(), counts = voteCounts();
   const total = g => groupIds(g).reduce((n, id) => n + (counts[id] || 0), 0);
   const showVotes = phase() === 'close';
-  let md = '# Retro del Barco · Product Support ↔ Desarrollo\n_' +
+  let md = '# Retro del Barco' + (sala && sala.title ? ' · ' + sala.title : '') + '\n_' +
     (sala && sala.retroDate ? fmtDate(sala.retroDate) : new Date().toLocaleDateString('es-ES')) +
     ' · sala ' + (sala && sala.title ? sala.title + ' (' + SALA + ')' : SALA) +
     (sala && sala.nextRetroDate ? ' · próxima retro: ' + fmtDate(sala.nextRetroDate) : '') + '_\n\n';
@@ -1358,7 +1358,7 @@ function exportForAI() {
     fechaRetro, proximaRetro,
     fechaPorDefecto: proximaRetro || addDays(fechaRetro, 14),
     instrucciones: [
-      'Eres el asistente de una retrospectiva entre Product Support y Desarrollo con el formato del barco.',
+      'Eres el asistente de una retrospectiva de equipo con el formato del barco. El contexto del equipo está en "titulo" y en las propias notas.',
       'Zonas: wind = Viento (lo que nos impulsa), island = Isla (objetivo ideal), anchor = Ancla (lo que nos frena), rocks = Rocas (riesgos).',
       '1) GRUPOS: propón grupos de notas que hablen de la misma idea o del mismo problema. Solo cuando la relación sea clara; no fuerces grupos ni agrupes por simple coincidencia de palabras.',
       '   "principal" es la nota que mejor resume el grupo (su zona será la del grupo). Normalmente agrupa dentro de la misma zona; mezcla zonas solo si es exactamente la misma idea.',
