@@ -274,8 +274,8 @@
   .ai-step .n { font-size: 13px; font-weight: 700; color: var(--blue); }
   .ai-step p { font-size: 14px; color: var(--ink-2); flex: 1; }
   .sug-item { padding: 12px 14px; border: 1px solid var(--stroke); border-radius: var(--r-note); display: flex; gap: 12px; cursor: pointer; }
-  .sug-item:has(input:checked) { border-color: var(--blue-150); background: var(--blue-050); }
-  .sug-item input { width: 20px; height: 20px; accent-color: var(--blue); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+  .sug-item:has(> input:checked) { border-color: var(--blue-150); background: var(--blue-050); }
+  .sug-item > input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--blue); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
   .sug-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .sug-body .why { font-size: 13px; color: var(--muted); }
   .sug-body ul { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
