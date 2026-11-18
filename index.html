@@ -274,6 +274,8 @@
   .sug-body ul { list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
   .sug-body li { padding-left: 10px; border-left: 2px solid var(--stroke); }
   .sug-body li.main { border-color: var(--blue); font-weight: 600; }
+  .sug-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 4px; }
+  .sug-fields .field input { height: 40px; }
   .sug-head { font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
 
   /* ARRASTRAR */
@@ -539,6 +541,27 @@
     <p style="font-size:13px;color:var(--muted);margin-top:-6px;">Notas agrupadas. Puedes separarlas una a una.</p>
     <div id="mergedList" style="display:flex;flex-direction:column;gap:8px;"></div>
     <div class="modal-actions"><button class="btn btn-outline" data-act="closeMerged">Cerrar</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="actModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="actModalTitle">
+    <h3 id="actModalTitle">Editar accionable</h3>
+    <label class="field">Acción
+      <textarea id="eaText" maxlength="300" style="min-height:80px"></textarea>
+    </label>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+      <label class="field">Responsable
+        <input id="eaOwner" maxlength="80" list="peopleList" placeholder="Nombre">
+      </label>
+      <label class="field">Fecha
+        <input id="eaDue" type="date">
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" data-act="closeActModal">Cancelar</button>
+      <button class="btn btn-primary" data-act="saveAction">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -1033,9 +1056,34 @@ function renderActions() {
                : '<span class="pill muted">Sin responsable</span>') +
       (a.due ? '<span class="pill">' + escH(fmtDate(a.due)) + '</span>' : '<span class="pill muted">Sin fecha</span>') +
       ((user && (a.createdBy === user.uid || isFac()))
-        ? '<button type="button" class="icon-btn danger" style="background:transparent" data-act="delAction" data-id="' + escH(a.id) + '" aria-label="Eliminar accionable">' + icon('trash', 18) + '</button>' : '');
+        ? '<span style="display:inline-flex;gap:2px">' +
+            '<button type="button" class="icon-btn" style="background:transparent" data-act="editAction" data-id="' + escH(a.id) + '" aria-label="Editar accionable">' + icon('pencil', 18) + '</button>' +
+            '<button type="button" class="icon-btn danger" style="background:transparent" data-act="delAction" data-id="' + escH(a.id) + '" aria-label="Eliminar accionable">' + icon('trash', 18) + '</button>' +
+          '</span>' : '');
     list.appendChild(el);
   });
+}
+
+let editingActionId = null;
+function openActionModal(id) {
+  const a = actions.find(x => x.id === id);
+  if (!a) return;
+  editingActionId = id;
+  $('eaText').value = a.text || '';
+  $('eaOwner').value = a.owner || '';
+  $('eaDue').value = a.due || '';
+  $('actModal').classList.add('show');
+  setTimeout(() => $('eaOwner').focus(), 50);
+}
+function closeActionModal() { $('actModal').classList.remove('show'); editingActionId = null; }
+function saveAction() {
+  const id = editingActionId;
+  const text = $('eaText').value.trim();
+  if (!text) { showToast('La acción no puede quedar vacía', 'warning'); return; }
+  const due = /^\d{4}-\d{2}-\d{2}$/.test($('eaDue').value) ? $('eaDue').value : '';
+  closeActionModal();
+  updateDoc(doc(colA(), id), { text: text.slice(0, 300), owner: $('eaOwner').value.trim().slice(0, 80), due })
+    .then(() => showToast('Accionable actualizado', 'success')).catch(fail);
 }
 
 /* ============ GRUPO (modal) ============ */
@@ -1342,9 +1390,12 @@ function renderSuggestions() {
   if (acciones.length) {
     html += '<div class="sug-head">Accionables (' + acciones.length + ')</div>';
     acciones.forEach((a, i) => {
-      html += '<label class="sug-item"><input type="checkbox" data-sug="a' + i + '" checked>' +
-        '<span class="sug-body"><b>' + escH(a.text) + '</b><span class="why">' +
-        escH(a.owner || 'Sin responsable') + ' · ' + escH(a.due ? fmtDate(a.due) : 'Sin fecha') + '</span></span></label>';
+      html += '<div class="sug-item"><input type="checkbox" data-sug="a' + i + '" id="sug-a' + i + '" checked>' +
+        '<span class="sug-body" style="flex:1"><label for="sug-a' + i + '" style="cursor:pointer"><b>' + escH(a.text) + '</b></label>' +
+        '<span class="sug-fields">' +
+          '<label class="field">Responsable<input data-sug-owner="' + i + '" list="peopleList" maxlength="80" placeholder="Nombre" value="' + escH(a.owner) + '"></label>' +
+          '<label class="field">Fecha<input data-sug-due="' + i + '" type="date" value="' + escH(a.due) + '"></label>' +
+        '</span></span></div>';
     });
   }
   $('sugIntro').textContent = 'Marca las que quieras aplicar.' + (unresolved ? ' Se han ignorado ' + unresolved + ' referencias a notas que no existen.' : '');
@@ -1381,7 +1432,11 @@ async function applySuggestions() {
   });
   pendingSug.acciones.forEach((a, i) => {
     if (!picked.has('a' + i)) return;
-    batch.set(doc(colA()), { text: a.text, owner: a.owner, due: a.due, done: false, createdBy: user.uid, createdAt: serverTimestamp() });
+    const ownerEl = document.querySelector('[data-sug-owner="' + i + '"]');
+    const dueEl = document.querySelector('[data-sug-due="' + i + '"]');
+    const owner = ownerEl ? ownerEl.value.trim().slice(0, 80) : a.owner;
+    const due = dueEl && /^\d{4}-\d{2}-\d{2}$/.test(dueEl.value) ? dueEl.value : '';
+    batch.set(doc(colA()), { text: a.text, owner, due, done: false, createdBy: user.uid, createdAt: serverTimestamp() });
     nActions++;
   });
   if (!nGroups && !nActions) { closeSug(); return; }
@@ -1426,6 +1481,9 @@ document.addEventListener('click', e => {
       if (confirm('¿Eliminar este accionable?')) deleteDoc(doc(colA(), id)).catch(fail);
       break;
     case 'phase': setPhase(id); break;
+    case 'editAction': openActionModal(id); break;
+    case 'closeActModal': closeActionModal(); break;
+    case 'saveAction': saveAction(); break;
     case 'exportAI': exportForAI(); break;
     case 'importAI': $('sugInput').click(); break;
     case 'closeSug': closeSug(); break;
@@ -1455,12 +1513,13 @@ document.addEventListener('change', e => {
 });
 $('mergedModal').addEventListener('click', function (e) { if (e.target === this) closeGroup(); });
 $('sugModal').addEventListener('click', function (e) { if (e.target === this) closeSug(); });
+$('actModal').addEventListener('click', function (e) { if (e.target === this) closeActionModal(); });
 $('sugInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleSuggestions(f); });
 $('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
 $('joinInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinSala(); });
 $('actText').addEventListener('keydown', e => { if (e.key === 'Enter') addAction(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); closeGroup(); if (pendingSug) closeSug(); }
+  if (e.key === 'Escape') { closeModal(); closeGroup(); closeActionModal(); if (pendingSug) closeSug(); }
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && $('modal').classList.contains('show')) savePostit();
 });
 window.addEventListener('popstate', () => location.reload());
