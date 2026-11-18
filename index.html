@@ -489,12 +489,12 @@
   <section class="card section ai-section">
     <div style="display:flex;flex-direction:column;gap:4px;">
       <h2>Sugerencias con Claude.</h2>
-      <p class="lead">Exporta las notas (sin autores), pásaselas a Claude y vuelve a importar su respuesta. Nada se aplica hasta que lo apruebes, y cualquier grupo se deshace con «Separar».</p>
+      <p class="lead">Exporta las notas con sus autores, pásaselas a Claude y vuelve a importar su respuesta. Nada se aplica hasta que lo apruebes, y cualquier grupo se deshace con «Separar».</p>
     </div>
     <div class="ai-steps">
       <div class="ai-step">
         <span class="n">Paso 1</span>
-        <p>Descarga las notas, los grupos, los votos (al cerrar) y los accionables, con las instrucciones para Claude incluidas.</p>
+        <p>Descarga las notas con su autor, los participantes, los grupos, los votos (al cerrar) y los accionables, con las instrucciones para Claude incluidas.</p>
         <button class="btn btn-secondary" data-act="exportAI"><svg width="18" height="18" aria-hidden="true"><use href="#i-download"/></svg>Exportar para Claude</button>
       </div>
       <div class="ai-step">
@@ -1299,11 +1299,15 @@ function exportForAI() {
   const withVotes = phase() === 'close';
   const notas = [];
   [...groups.values()].sort((a, b) => ts(a.root.createdAt) - ts(b.root.createdAt)).forEach(g => {
-    const n = { id: shortId(g.root.id), zona: g.root.zone, texto: g.root.text };
+    const n = { id: shortId(g.root.id), zona: g.root.zone, autor: g.root.author || '', texto: g.root.text };
     if (withVotes) n.votosDelGrupo = groupIds(g).reduce((s, id) => s + (counts[id] || 0), 0);
     notas.push(n);
-    g.members.forEach(m => notas.push({ id: shortId(m.id), zona: m.zone, texto: m.text, yaAgrupadaEn: shortId(g.root.id) }));
+    g.members.forEach(m => notas.push({ id: shortId(m.id), zona: m.zone, autor: m.author || '', texto: m.text, yaAgrupadaEn: shortId(g.root.id) }));
   });
+  const participantes = new Set();
+  postits.forEach(p => p.author && participantes.add(p.author));
+  Object.values(votes).forEach(v => v.name && participantes.add(v.name));
+  if (sala.facilitatorName) participantes.add(sala.facilitatorName);
   const payload = {
     _type: 'retro-barco-para-ia', _version: 1,
     sala: SALA, titulo: (sala && sala.title) || '', fase: phase(), exportadoEn: new Date().toISOString(),
@@ -1314,15 +1318,19 @@ function exportForAI() {
       '   "principal" es la nota que mejor resume el grupo (su zona será la del grupo). Normalmente agrupa dentro de la misma zona; mezcla zonas solo si es exactamente la misma idea.',
       '   Usa EXACTAMENTE los id de "notas". No propongas grupos que ya existan (notas con yaAgrupadaEn).',
       '2) ACCIONABLES: propón entre 3 y 5 acciones concretas (qué + quién + cuándo), priorizando las notas con más votos si hay votos.',
-      '   Deja "responsable" vacío si no se deduce de las notas; "fecha" en formato AAAA-MM-DD o vacía. No repitas accionables que ya existan.',
+      '   "responsable": elige UNA persona de "participantes", escrita exactamente igual. Normalmente quien escribió las notas relacionadas o quien está más cerca del problema;',
+      '   si varias personas encajan, elige la que más notas tenga sobre ese tema. Déjalo vacío solo si no hay ninguna base.',
+      '   "fecha": AAAA-MM-DD (por defecto, 2 semanas después de "exportadoEn") o vacía. No repitas accionables que ya existan.',
+      '   Añade "motivoResponsable": una frase corta explicando por qué esa persona.',
       'Responde SOLO con un JSON con la forma de "formatoRespuesta", sin texto antes ni después.'
     ].join('\n'),
+    participantes: [...participantes].sort(),
     notas,
     accionablesExistentes: actions.map(a => ({ texto: a.text, responsable: a.owner || '', fecha: a.due || '', hecho: !!a.done })),
     formatoRespuesta: {
       _type: 'retro-barco-sugerencias', sala: SALA,
       grupos: [{ titulo: 'Nombre corto del tema', principal: 'id', notas: ['id', 'id'], motivo: 'Por qué van juntas, en una frase' }],
-      accionables: [{ texto: 'Acción concreta', responsable: '', fecha: '', notasRelacionadas: ['id'] }]
+      accionables: [{ texto: 'Acción concreta', responsable: 'Nombre de participantes', motivoResponsable: 'Por qué esa persona', fecha: 'AAAA-MM-DD', notasRelacionadas: ['id'] }]
     }
   };
   const a = document.createElement('a');
@@ -1361,6 +1369,7 @@ async function handleSuggestions(file) {
   const acciones = (Array.isArray(data.accionables) ? data.accionables : []).map(a => ({
     text: String((a && a.texto) || '').trim().slice(0, 300),
     owner: String((a && a.responsable) || '').trim().slice(0, 80),
+    why: String((a && a.motivoResponsable) || '').trim().slice(0, 200),
     due: /^\d{4}-\d{2}-\d{2}$/.test((a && a.fecha) || '') ? a.fecha : ''
   })).filter(a => a.text && !existing.has(a.text.toLowerCase()));
   if (!grupos.length && !acciones.length) {
@@ -1395,7 +1404,7 @@ function renderSuggestions() {
         '<span class="sug-fields">' +
           '<label class="field">Responsable<input data-sug-owner="' + i + '" list="peopleList" maxlength="80" placeholder="Nombre" value="' + escH(a.owner) + '"></label>' +
           '<label class="field">Fecha<input data-sug-due="' + i + '" type="date" value="' + escH(a.due) + '"></label>' +
-        '</span></span></div>';
+        '</span>' + (a.why ? '<span class="why">' + escH(a.why) + '</span>' : '') + '</span></div>';
     });
   }
   $('sugIntro').textContent = 'Marca las que quieras aplicar.' + (unresolved ? ' Se han ignorado ' + unresolved + ' referencias a notas que no existen.' : '');
