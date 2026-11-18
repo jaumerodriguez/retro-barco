@@ -17,24 +17,20 @@
   }
   body {
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: #f1f3f5;
-    color: #212529;
-    line-height: 1.45;
+    background: #f1f3f5; color: #212529; line-height: 1.45;
   }
   header {
-    background: #0b3d91; color: #fff;
-    padding: 14px 24px;
+    background: #0b3d91; color: #fff; padding: 14px 24px;
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 12px;
-    position: sticky; top: 0; z-index: 50;
+    flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 50;
     box-shadow: 0 2px 8px rgba(0,0,0,.15);
   }
   header h1 { font-size: 20px; font-weight: 600; }
   header h1 span { opacity: .8; font-weight: 400; font-size: 13px; display:block; }
   .sala-chip {
-    display:inline-flex; align-items:center; gap:6px;
+    display:inline-flex !important; align-items:center; gap:6px;
     background: rgba(255,255,255,.14); border-radius: 20px;
-    padding: 3px 10px; font-size: 12px; margin-top: 4px;
+    padding: 3px 10px; font-size: 12px; margin-top: 4px; opacity: 1 !important;
   }
   .live-dot { width:8px; height:8px; border-radius:50%; background:#adb5bd; display:inline-block; }
   .live-dot.on { background:#51cf66; box-shadow: 0 0 0 3px rgba(81,207,102,.3); }
@@ -43,22 +39,40 @@
   .user-chip { display:flex; align-items:center; gap:8px; font-size:13px; }
   .user-chip img { width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,255,255,.6); }
   button {
-    border: none; cursor: pointer; padding: 9px 14px;
-    border-radius: 8px; font-size: 13px; font-weight: 600;
-    background: #fff; color: #0b3d91;
-    transition: transform .1s, box-shadow .15s;
-    font-family: inherit;
+    border: none; cursor: pointer; padding: 9px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; background: #fff; color: #0b3d91;
+    transition: transform .1s, box-shadow .15s; font-family: inherit;
   }
-  button:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.15); }
+  button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.15); }
   button.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); }
   button.success { background: #2f9e44; color:#fff; }
+  button.primary { background: #0b3d91; color:#fff; }
 
-  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; padding: 18px; }
-  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
-
-  .steps {
-    background: #fff; border-radius: 14px; padding: 18px;
+  /* FASES */
+  .phasebar {
+    margin: 18px 18px 0; background: #fff; border-radius: 14px; padding: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  }
+  .phase-steps { display: flex; gap: 8px; flex-wrap: wrap; }
+  .phase-step {
+    flex: 1; min-width: 160px; text-align: left; background: #f1f3f5; color: #495057;
+    padding: 10px 12px; border-radius: 10px; font-size: 13px;
+  }
+  .phase-step small { display: block; font-weight: 400; opacity: .85; font-size: 11px; margin-top: 2px; }
+  .phase-step.done { background: #e7f5ff; color: #0b3d91; }
+  .phase-step.active { background: #0b3d91; color: #fff; box-shadow: 0 4px 12px rgba(11,61,145,.3); }
+  .phase-step:disabled { cursor: default; }
+  .phase-meta {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    gap: 8px; margin-top: 10px; font-size: 12px; color: #6c757d;
+  }
+  .votes-chip { background: #fff3bf; color: #5c3c00; border-radius: 20px; padding: 4px 12px; font-weight: 700; font-size: 13px; }
+  .votes-chip.empty { background: #ffe3e3; color: #a61e1e; }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; padding: 18px; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  .steps {
+    background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,.06);
     height: fit-content; position: sticky; top: 100px;
   }
   @media (max-width: 980px) { .steps { position: static; } }
@@ -71,9 +85,8 @@
   .dot { width:12px; height:12px; border-radius: 3px; display:inline-block; }
 
   .canvas {
-    background: var(--bg); border-radius: 14px; overflow: hidden;
-    position: relative; min-height: 700px;
-    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+    background: var(--bg); border-radius: 14px; overflow: hidden; position: relative;
+    min-height: 700px; box-shadow: 0 4px 20px rgba(0,0,0,.12);
   }
   .zones {
     display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
@@ -81,8 +94,8 @@
   }
   @media (max-width: 720px) { .zones { grid-template-columns: 1fr; } }
   .zone {
-    background: rgba(255,255,255,.92); border-radius: 12px; padding: 14px;
-    border-top: 6px solid; display: flex; flex-direction: column; min-height: 280px;
+    background: rgba(255,255,255,.92); border-radius: 12px; padding: 14px; border-top: 6px solid;
+    display: flex; flex-direction: column; min-height: 280px;
     transition: outline .15s, background .15s; position: relative;
   }
   .zone[data-zone="wind"]   { border-color: var(--wind); }
@@ -97,27 +110,32 @@
     border: 1px dashed #adb5bd; background: #fff; color: #495057;
     padding: 6px 10px; font-size: 12px; margin-left:auto; border-radius: 6px;
   }
+  body:not(.can-add) .zone-add { display: none; }
   .postits { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; flex: 1; }
   .postit {
-    width: 145px; min-height: 95px; padding: 9px 10px; border-radius: 4px;
-    box-shadow: 2px 4px 7px rgba(0,0,0,.12); font-size: 12px;
-    position: relative; cursor: grab;
-    transform: rotate(var(--rot, -1deg));
-    transition: transform .15s, box-shadow .15s;
+    width: 150px; min-height: 95px; padding: 9px 10px; border-radius: 4px;
+    box-shadow: 2px 4px 7px rgba(0,0,0,.12); font-size: 12px; position: relative;
+    transform: rotate(var(--rot, -1deg)); transition: transform .15s, box-shadow .15s;
     user-select: none; isolation: isolate;
   }
+  .postit[draggable="true"] { cursor: grab; }
   .postit:hover { transform: rotate(0) scale(1.04); box-shadow: 3px 6px 12px rgba(0,0,0,.18); z-index: 3;}
   .postit.fresh { animation: pop .5s ease-out; }
   @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: rotate(var(--rot,-1deg)); opacity: 1; } }
-  .postit .author { font-size: 10px; color:#495057; opacity:.8; margin-bottom: 4px; font-weight:600; }
+  .postit .author { font-size: 10px; color:#495057; opacity:.85; margin-bottom: 4px; font-weight:600; }
   .postit .text { white-space: pre-wrap; word-break: break-word; }
-  .postit .actions { display:flex; gap:4px; margin-top: 6px; align-items:center; justify-content: space-between; }
+  .postit .actions { display:flex; gap:4px; margin-top: 8px; align-items:center; flex-wrap: wrap; }
+  .postit .actions .spacer { flex: 1; }
   .vote {
-    background: rgba(0,0,0,.08); border:none; padding: 2px 7px;
-    border-radius: 12px; font-size: 11px; cursor: pointer; font-weight:600;
+    background: rgba(0,0,0,.08); border:none; padding: 3px 8px; border-radius: 12px;
+    font-size: 11px; cursor: pointer; font-weight:700; color: #212529;
   }
   .vote:hover { background: rgba(0,0,0,.18); }
-  .del { background: transparent; border:none; cursor:pointer; color: #c92a2a; font-size: 14px; padding: 0 4px; }
+  .vote.mine { background: #0b3d91; color: #fff; }
+  .vote.static { cursor: default; background: rgba(0,0,0,.12); font-size: 12px; }
+  .mini { background: transparent; border: none; cursor: pointer; font-size: 13px; padding: 0 4px; color: #495057; }
+  .mini.del { color: #c92a2a; }
+  .mini:hover { transform: scale(1.15); box-shadow: none; }
 
   .boat-art {
     position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
@@ -126,77 +144,84 @@
 
   .modal-bg {
     position: fixed; inset: 0; background: rgba(0,0,0,.55);
-    display: none; align-items: center; justify-content: center; z-index: 100;
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
   }
   .modal-bg.show { display:flex; }
   .modal {
-    background: #fff; border-radius: 14px; padding: 22px; width: min(440px, 92vw);
+    background: #fff; border-radius: 14px; padding: 22px; width: min(440px, 100%);
     box-shadow: 0 12px 40px rgba(0,0,0,.3); max-height: 90vh; overflow-y: auto;
   }
   .modal h3 { margin-bottom: 12px; color: #0b3d91; }
   .modal label { display:block; font-size: 12px; margin-bottom: 4px; color:#495057; font-weight:600;}
   .modal input, .modal textarea {
-    width:100%; padding: 9px 10px; border: 1px solid #ced4da;
-    border-radius: 6px; font-size: 13px; margin-bottom: 12px; font-family: inherit;
+    width:100%; padding: 9px 10px; border: 1px solid #ced4da; border-radius: 6px;
+    font-size: 13px; margin-bottom: 12px; font-family: inherit;
   }
-  .modal textarea { resize: vertical; min-height: 80px; }
+  .modal textarea { resize: vertical; min-height: 90px; }
+  .modal .counter { font-size: 11px; color: #adb5bd; text-align: right; margin-top: -8px; margin-bottom: 8px; }
   .modal-actions { display:flex; justify-content: flex-end; gap: 8px; margin-top: 4px;}
 
   .actions-section, .tools-section {
-    margin: 18px; background:#fff; border-radius: 14px; padding: 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    margin: 18px; background:#fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,.06);
   }
   .actions-section h2, .tools-section h2 { color:#0b3d91; margin-bottom: 4px; font-size: 18px; }
   .actions-section p.lead, .tools-section p.lead { color: #6c757d; font-size: 13px; margin-bottom: 14px;}
-  .action-form { display: grid; grid-template-columns: 2fr 1fr 140px auto; gap: 8px; margin-bottom: 14px; }
+  .action-form { display: grid; grid-template-columns: 2fr 1fr 150px auto; gap: 8px; margin-bottom: 14px; }
   .action-form input { padding: 9px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; font-family: inherit; }
   .action-form button { background: var(--action); color: #fff; }
   .action-list { display:flex; flex-direction: column; gap: 8px; }
   .action-item {
-    display:grid; grid-template-columns: auto 2fr 1fr 140px auto;
-    gap:8px; align-items:center; background: #f8f9fa; padding: 10px 12px; border-radius: 8px;
+    display:grid; grid-template-columns: auto 2fr 1fr 130px auto; gap:8px; align-items:center;
+    background: #f8f9fa; padding: 10px 12px; border-radius: 8px;
     border-left: 4px solid var(--action); font-size: 13px;
   }
   .action-item.done { opacity: .6; text-decoration: line-through; }
   @media (max-width: 720px) { .action-form, .action-item { grid-template-columns: 1fr; } }
+  body:not(.can-import) .tools-section { display: none; }
 
   .empty { color: #adb5bd; font-size: 12px; font-style: italic; padding: 12px 0; }
   .footer-note { text-align:center; padding: 16px; color:#6c757d; font-size: 12px;}
 
   .dropzone {
-    border: 2px dashed #74b9ff; border-radius: 10px; padding: 22px;
-    text-align: center; cursor: pointer; transition: background .2s, border-color .2s;
-    color: #495057; font-size: 13px;
+    border: 2px dashed #74b9ff; border-radius: 10px; padding: 22px; text-align: center;
+    cursor: pointer; transition: background .2s, border-color .2s; color: #495057; font-size: 13px;
   }
   .dropzone:hover, .dropzone.dragover { background: #e7f5ff; border-color: #0b3d91; }
   .dropzone input[type=file] { display: none; }
 
   .toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120px);
-    background: #212529; color: #fff; padding: 12px 20px; border-radius: 10px;
-    font-size: 13px; z-index: 200; box-shadow: 0 6px 20px rgba(0,0,0,.25);
-    transition: transform .3s ease; max-width: 92vw;
+    background: #212529; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px;
+    z-index: 600; box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .3s ease; max-width: 92vw;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.success { background: #2f9e44; }
   .toast.warning { background: #e67700; }
 
-  /* LOGIN */
-  #login {
+  /* OVERLAYS: LOGIN + PORTADA */
+  .overlay {
     position: fixed; inset: 0; z-index: 500;
     background: linear-gradient(180deg, #74c0fc 0%, #1864ab 100%);
     display: flex; align-items: center; justify-content: center; padding: 16px;
   }
-  #login.hide { display: none; }
-  .login-card {
-    background: #fff; border-radius: 16px; padding: 32px; width: min(420px, 100%);
+  .overlay.hide { display: none; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 28px; width: min(440px, 100%);
     text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.25);
   }
-  .login-card .boat { font-size: 52px; }
-  .login-card h2 { color: #0b3d91; margin: 6px 0 4px; }
-  .login-card p { color: #6c757d; font-size: 13px; margin-bottom: 20px; }
-  .login-card button { background: #0b3d91; color: #fff; padding: 12px 18px; font-size: 14px; }
-  .login-err { color: #c92a2a; font-size: 13px; margin-top: 14px; min-height: 18px; }
+  .card .boat { font-size: 48px; }
+  .card h2 { color: #0b3d91; margin: 6px 0 4px; }
+  .card p { color: #6c757d; font-size: 13px; margin-bottom: 16px; }
+  .card .err { color: #c92a2a; font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .card input {
+    width: 100%; padding: 10px 12px; border: 1px solid #ced4da; border-radius: 8px;
+    font-size: 14px; margin-bottom: 10px; font-family: inherit;
+  }
+  .card .divider { display: flex; align-items: center; gap: 10px; color: #adb5bd; font-size: 12px; margin: 18px 0 12px; }
+  .card .divider::before, .card .divider::after { content: ''; flex: 1; height: 1px; background: #e9ecef; }
+  .card .row { display: flex; gap: 8px; }
+  .card .row input { margin: 0; }
+  .card .full { width: 100%; padding: 12px; font-size: 14px; }
 
   /* DRAG & DROP */
   .postit.dragging {
@@ -213,17 +238,14 @@
   }
   @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
   .postit.merge-target {
-    outline: 3px solid #f59f00; outline-offset: 3px;
-    transform: rotate(0deg) scale(1.08) !important;
-    box-shadow: 0 0 0 4px rgba(245,159,0,.25), 0 10px 26px rgba(245,159,0,.45) !important;
-    z-index: 6;
+    outline: 3px solid #f59f00; outline-offset: 3px; transform: rotate(0deg) scale(1.08) !important;
+    box-shadow: 0 0 0 4px rgba(245,159,0,.25), 0 10px 26px rgba(245,159,0,.45) !important; z-index: 6;
   }
   .postit.merge-target::before, .postit.merge-target::after { display: none; }
   .drag-indicator {
     position: fixed; pointer-events: none; background: #212529; color: white;
     padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700;
-    z-index: 1000; display: none; box-shadow: 0 8px 22px rgba(0,0,0,.4);
-    white-space: nowrap; transition: background .12s;
+    z-index: 1000; display: none; box-shadow: 0 8px 22px rgba(0,0,0,.4); white-space: nowrap;
   }
   .drag-indicator.show { display: block; }
   .drag-indicator.merge { background: #f59f00; }
@@ -242,11 +264,10 @@
   }
   .merge-badge {
     position: absolute; top: -10px; right: -10px; background: #0b3d91; color: white;
-    min-width: 28px; height: 28px; padding: 0 7px; border-radius: 14px;
-    border: 2px solid white; font-size: 12px; font-weight: 800; cursor: pointer;
+    min-width: 28px; height: 28px; padding: 0 7px; border-radius: 14px; border: 2px solid white;
+    font-size: 12px; font-weight: 800; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 3px 10px rgba(0,0,0,.35); z-index: 4;
-    transition: transform .15s, background .15s; line-height: 1;
+    box-shadow: 0 3px 10px rgba(0,0,0,.35); z-index: 4; line-height: 1;
   }
   .merge-badge::before { content: '🔗'; font-size: 10px; margin-right: 3px; }
   .merge-badge:hover { transform: scale(1.18); background: #1864ab; }
@@ -262,24 +283,48 @@
   .merged-item-header .pill.main { background: #0b3d91; color: white; }
   .merged-item-header .pill.zone { background: #fff; border: 1px solid #ced4da; }
   .merged-item-text { font-size: 13px; color: #212529; white-space: pre-wrap; word-break: break-word; }
-  .merged-item-footer { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #6c757d; }
-  .merged-item-footer .unmerge {
+  .merged-item-footer { margin-top: 8px; display: flex; justify-content: flex-end; }
+  .unmerge {
     background: transparent; border: 1px solid #ced4da; padding: 4px 10px; border-radius: 6px;
     font-size: 11px; color: #0b3d91; cursor: pointer; font-weight: 600;
   }
-  .merged-item-footer .unmerge:hover { background: #e7f5ff; border-color: #74b9ff; }
+  .unmerge:hover { background: #e7f5ff; border-color: #74b9ff; }
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="login">
-  <div class="login-card">
+<div class="overlay" id="login">
+  <div class="card">
     <div class="boat">&#x26F5;</div>
     <h2>Retro del Barco</h2>
-    <p>Product Support &#x2194; Desarrollo<br>Entra con tu cuenta de Google de Sesame para unirte a la sala.</p>
-    <button id="loginBtn">Entrar con Google</button>
-    <div class="login-err" id="loginErr"></div>
+    <p>Product Support &#x2194; Desarrollo<br>Entra con tu cuenta de Google de Sesame.</p>
+    <button class="primary full" id="loginBtn">Entrar con Google</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- PORTADA: crear / unirse -->
+<div class="overlay hide" id="portada">
+  <div class="card">
+    <div class="boat">&#x26F5;</div>
+    <h2 id="portadaTitle">Retro del Barco</h2>
+    <p id="portadaText">Crea una sala para tu retro (ser&aacute;s quien facilita) o &uacute;nete a una con el enlace que te han pasado.</p>
+    <div id="portadaNew">
+      <input id="newTitle" maxlength="40" placeholder="Nombre de la retro (opcional), ej. PS-Devs diciembre">
+      <button class="primary full" data-act="createSala">Crear sala nueva</button>
+      <div class="divider">o &uacute;nete a una existente</div>
+      <div class="row">
+        <input id="joinInput" placeholder="Pega el enlace o el c&oacute;digo de la sala">
+        <button data-act="joinSala">Entrar</button>
+      </div>
+    </div>
+    <div id="portadaMissing" style="display:none">
+      <button class="primary full" data-act="createMissing">Crear esta sala (ser&eacute; quien facilita)</button>
+      <div class="divider">o</div>
+      <button class="full" data-act="goHome">Ir a la portada</button>
+    </div>
+    <div class="err" id="portadaErr"></div>
   </div>
 </div>
 
@@ -290,24 +335,28 @@
   </h1>
   <div class="toolbar">
     <div class="user-chip" id="userChip"></div>
-    <button id="copyLinkBtn">&#x1F517; Copiar enlace</button>
-    <button class="ghost" id="newSalaBtn">&#x2795; Nueva sala</button>
-    <button id="exportSummaryBtn">&#x1F4C4; Resumen .md</button>
-    <button class="ghost" id="logoutBtn">Salir</button>
+    <button data-act="copyLink">&#x1F517; Copiar enlace</button>
+    <button data-act="exportMd">&#x1F4C4; Resumen .md</button>
+    <button class="ghost" data-act="goHome">&#x2795; Otra sala</button>
+    <button class="ghost" data-act="logout">Salir</button>
   </div>
 </header>
 
+<nav class="phasebar">
+  <div class="phase-steps" id="phaseSteps"></div>
+  <div class="phase-meta"><span id="phaseInfo"></span><span id="votesChip"></span></div>
+</nav>
+
 <div class="layout">
   <aside class="steps">
-    <h2>&#x1F9ED; C&oacute;mo facilitar la sesi&oacute;n</h2>
+    <h2>&#x1F9ED; C&oacute;mo funciona</h2>
     <ol>
-      <li><b>Comparte el enlace</b> <span class="time">(antes de la reuni&oacute;n)</span><br>Pulsa <b>"&#x1F517; Copiar enlace"</b> y p&aacute;salo al equipo. Cada uno entra con su cuenta de Sesame.</li>
-      <li><b>Preparaci&oacute;n individual</b> <span class="time">(antes o 5 min)</span><br>Cada persona a&ntilde;ade sus post-its. Todos ven los cambios en directo.</li>
-      <li><b>Compartir y agrupar</b> <span class="time">(12 min)</span><br>Cada uno lee los suyos. Arrastra un post-it sobre otro para fusionarlos.</li>
-      <li><b>Votaci&oacute;n</b> <span class="time">(5 min)</span><br>3 votos por persona (bot&oacute;n &#x1F44D; del post-it).</li>
-      <li><b>Accionables</b> <span class="time">(12 min)</span><br>3-5 acciones concretas con responsable y fecha.</li>
-      <li><b>Cierre</b> <span class="time">(5 min)</span><br>Exportar el resumen y compartirlo en el canal.</li>
+      <li><b>Escribir</b> <span class="time">(antes o 5-10 min)</span><br>Cada uno a&ntilde;ade sus post-its. Nadie ve los de los dem&aacute;s todav&iacute;a, para no influirse.</li>
+      <li><b>Compartir y agrupar</b> <span class="time">(12 min)</span><br>Se revelan todos. Cada uno lee los suyos y se arrastran unos sobre otros para agrupar ideas parecidas.</li>
+      <li><b>Votar</b> <span class="time">(5 min)</span><br>3 votos por persona (puedes poner varios en el mismo). Los totales se ocultan hasta el cierre.</li>
+      <li><b>Cerrar</b> <span class="time">(12-17 min)</span><br>Se ordenan por votos. Definid 3-5 accionables con responsable y fecha y exportad el resumen.</li>
     </ol>
+    <p style="font-size:12px;color:#495057;margin-top:6px;">Quien crea la sala la <b>facilita</b> y es quien pasa de fase.</p>
     <div class="legend">
       <b>Las 4 zonas:</b>
       <div><span class="dot" style="background:var(--wind)"></span> Viento &rarr; impulsa</div>
@@ -316,7 +365,7 @@
       <div><span class="dot" style="background:var(--island)"></span> Isla &rarr; objetivo ideal</div>
     </div>
     <p style="margin-top:14px;font-size:11px;color:#6c757d;">
-      &#x2601;&#xFE0F; Todo se guarda en la nube y se sincroniza en tiempo real. Solo pueden entrar cuentas @sesametime.com.
+      &#x2601;&#xFE0F; Se sincroniza en tiempo real. Solo pueden entrar cuentas @sesametime.com.
     </p>
   </aside>
 
@@ -329,11 +378,10 @@
             <div class="zone-title">Viento &mdash; qu&eacute; nos impulsa</div>
             <div class="zone-sub">Lo que ya funciona bien entre PS y Devs</div>
           </div>
-          <button class="zone-add" onclick="openModal('wind')">+ Post-it</button>
+          <button class="zone-add" data-act="add" data-zone="wind">+ Post-it</button>
         </div>
         <div class="postits" data-list="wind"></div>
       </div>
-
       <div class="zone" data-zone="island">
         <div class="zone-header">
           <span class="zone-icon">&#x1F3DD;&#xFE0F;</span>
@@ -341,11 +389,10 @@
             <div class="zone-title">Isla &mdash; nuestro objetivo</div>
             <div class="zone-sub">C&oacute;mo queremos que sea la colaboraci&oacute;n ideal</div>
           </div>
-          <button class="zone-add" onclick="openModal('island')">+ Post-it</button>
+          <button class="zone-add" data-act="add" data-zone="island">+ Post-it</button>
         </div>
         <div class="postits" data-list="island"></div>
       </div>
-
       <div class="zone" data-zone="anchor">
         <div class="zone-header">
           <span class="zone-icon">&#x2693;</span>
@@ -353,11 +400,10 @@
             <div class="zone-title">Ancla &mdash; qu&eacute; nos frena</div>
             <div class="zone-sub">Tickets mal documentados, info incompleta, ruido&hellip;</div>
           </div>
-          <button class="zone-add" onclick="openModal('anchor')">+ Post-it</button>
+          <button class="zone-add" data-act="add" data-zone="anchor">+ Post-it</button>
         </div>
         <div class="postits" data-list="anchor"></div>
       </div>
-
       <div class="zone" data-zone="rocks">
         <div class="zone-header">
           <span class="zone-icon">&#x1FAA8;</span>
@@ -365,12 +411,11 @@
             <div class="zone-title">Rocas &mdash; riesgos en el horizonte</div>
             <div class="zone-sub">Lo que puede empeorar si no actuamos</div>
           </div>
-          <button class="zone-add" onclick="openModal('rocks')">+ Post-it</button>
+          <button class="zone-add" data-act="add" data-zone="rocks">+ Post-it</button>
         </div>
         <div class="postits" data-list="rocks"></div>
       </div>
     </div>
-
     <svg class="boat-art" viewBox="0 0 260 180">
       <polygon points="130,10 130,90 50,90" fill="#fff" opacity=".95"/>
       <polygon points="130,20 130,90 200,90" fill="#fff" opacity=".8"/>
@@ -381,54 +426,49 @@
   </main>
 </div>
 
-<!-- ACCIONABLES -->
 <section class="actions-section">
   <h2>&#x2705; Accionables</h2>
   <p class="lead">Salir de la retro con compromisos claros. Una acci&oacute;n = qu&eacute; + qui&eacute;n + cu&aacute;ndo.</p>
   <div class="action-form">
-    <input id="actText" placeholder="Acci&oacute;n concreta (ej. plantilla obligatoria de tickets PS&rarr;Devs)">
-    <input id="actOwner" placeholder="Responsable">
+    <input id="actText" maxlength="300" placeholder="Acci&oacute;n concreta (ej. plantilla obligatoria de tickets PS&rarr;Devs)">
+    <input id="actOwner" maxlength="80" list="peopleList" placeholder="Responsable">
     <input id="actDue" type="date">
-    <button onclick="addAction()">+ A&ntilde;adir</button>
+    <button data-act="addAction">+ A&ntilde;adir</button>
   </div>
+  <datalist id="peopleList"></datalist>
   <div class="action-list" id="actionList"></div>
 </section>
 
-<!-- IMPORTAR ARCHIVOS ANTIGUOS -->
 <section class="tools-section">
   <h2>&#x1F4E5; Importar archivos .retro antiguos</h2>
-  <p class="lead">Si alguien prepar&oacute; sus post-its con la versi&oacute;n antigua (sin conexi&oacute;n), arrastra aqu&iacute; sus archivos <code>.retro</code> y se a&ntilde;adir&aacute;n a esta sala. Los duplicados se ignoran.</p>
+  <p class="lead">Si alguien prepar&oacute; sus post-its con la versi&oacute;n sin conexi&oacute;n, arrastra aqu&iacute; sus archivos <code>.retro</code> y se a&ntilde;adir&aacute;n a la sala. Disponible en la fase &laquo;Compartir y agrupar&raquo;.</p>
   <div class="dropzone" id="dropzone">
     <input type="file" id="fileInput" accept=".retro,.json" multiple>
     <b>Arrastra archivos .retro aqu&iacute;</b> o haz clic para seleccionarlos
   </div>
 </section>
 
-<div class="footer-note">&#x26F5; Retro del Barco &middot; Sincronizado en tiempo real con Firebase.</div>
+<div class="footer-note">&#x26F5; Retro del Barco &middot; Sincronizado en tiempo real.</div>
 
 <div class="modal-bg" id="modal">
   <div class="modal">
     <h3 id="modalTitle">Nuevo post-it</h3>
-    <label>Tu nombre</label>
-    <input id="pAuthor" placeholder="Ej. Mar&iacute;a">
-    <label>Tu idea</label>
-    <textarea id="pText" placeholder="S&eacute; concreto/a y constructivo/a"></textarea>
-    <input type="hidden" id="pZone">
+    <label for="pText">Tu idea</label>
+    <textarea id="pText" maxlength="500" placeholder="S&eacute; concreto/a y constructivo/a"></textarea>
+    <div class="counter" id="pCounter">0/500</div>
     <div class="modal-actions">
-      <button style="color:#495057;border:1px solid #ced4da;background:#fff;" onclick="closeModal()">Cancelar</button>
-      <button class="success" onclick="savePostit()">A&ntilde;adir</button>
+      <button style="color:#495057;border:1px solid #ced4da;background:#fff;" data-act="closeModal">Cancelar</button>
+      <button class="success" data-act="savePostit" id="saveBtn">A&ntilde;adir</button>
     </div>
   </div>
 </div>
 
 <div class="modal-bg" id="mergedModal">
-  <div class="modal" style="width:min(560px,92vw);">
-    <h3 id="mergedModalTitle">&#x1F517; Pins fusionados</h3>
-    <p style="font-size:12px;color:#6c757d;margin-bottom:14px;">Pins agrupados en este post-it. Puedes separarlos individualmente.</p>
+  <div class="modal" style="width:min(560px,100%);">
+    <h3 id="mergedModalTitle">&#x1F517; Grupo</h3>
+    <p style="font-size:12px;color:#6c757d;margin-bottom:14px;">Post-its agrupados. Puedes separarlos uno a uno.</p>
     <div id="mergedList"></div>
-    <div class="modal-actions">
-      <button onclick="closeMergedModal()">Cerrar</button>
-    </div>
+    <div class="modal-actions"><button data-act="closeMerged">Cerrar</button></div>
   </div>
 </div>
 
@@ -437,10 +477,10 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc,
-         runTransaction, increment, serverTimestamp, writeBatch }
+         serverTimestamp, writeBatch, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // La config web de Firebase es pública por diseño: la seguridad la dan las reglas de Firestore.
@@ -453,6 +493,7 @@ const firebaseConfig = {
   appId: "1:533714326073:web:b19349a7b1cf12694933e8"
 };
 const ALLOWED_DOMAIN = "sesametime.com";
+const MAX_VOTES = 3;
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -464,39 +505,40 @@ const ZONES = {
   rocks:  { name: "Rocas (riesgos)" },
   island: { name: "Isla (objetivo)" }
 };
+const PHASES = [
+  { id: 'write',  label: '1 · Escribir',             hint: 'Cada uno ve solo sus post-its' },
+  { id: 'reveal', label: '2 · Compartir y agrupar',  hint: 'Se ven todos · arrastra para agrupar' },
+  { id: 'vote',   label: '3 · Votar',                hint: MAX_VOTES + ' votos por persona · totales ocultos' },
+  { id: 'close',  label: '4 · Cerrar',               hint: 'Resultados por votos y accionables' }
+];
+const SALA_RE = /^[A-Za-z0-9_-]{3,80}$/;
+const DOC_RE = /^[A-Za-z0-9_-]{1,100}$/;
 
-/* ============ SALA ============ */
-function randomId(n) {
-  const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
-  let s = ''; const a = crypto.getRandomValues(new Uint8Array(n));
-  for (const b of a) s += chars[b % chars.length];
-  return s;
-}
-function newSalaId() { return 'retro-' + new Date().toISOString().slice(0,10) + '-' + randomId(6); }
+/* ============ ESTADO ============ */
+let SALA = (new URLSearchParams(location.search).get('sala') || '').trim();
+if (!SALA_RE.test(SALA)) SALA = null;
 
-const params = new URLSearchParams(location.search);
-let SALA = (params.get('sala') || '').trim();
-if (!/^[a-z0-9-]{3,80}$/i.test(SALA)) {
-  SALA = newSalaId();
-  params.set('sala', SALA);
-  history.replaceState(null, '', location.pathname + '?' + params.toString());
-}
-document.getElementById('salaName').textContent = SALA;
-const colP = collection(db, 'salas', SALA, 'postits');
-const colA = collection(db, 'salas', SALA, 'actions');
-
-/* ============ STATE ============ */
-let state = { postits: [], actions: [] };
 let user = null;
+let sala = null;          // documento salas/{SALA}
+let postits = [];
+let votes = {};           // uid -> { ids: [...], name }
+let actions = [];
 let unsubs = [];
+let unsubP = null, pMode = null;
 let firstLoad = true;
 const seenIds = new Set();
-let openMergedId = null;
+let openGroupId = null;
+let editingId = null;
+
+const colP = () => collection(db, 'salas', SALA, 'postits');
+const colA = () => collection(db, 'salas', SALA, 'actions');
+const colV = () => collection(db, 'salas', SALA, 'votes');
+const $ = id => document.getElementById(id);
 
 /* ============ UTILS ============ */
 let toastTimer;
 function showToast(msg, type) {
-  const t = document.getElementById('toast');
+  const t = $('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
@@ -508,209 +550,507 @@ function escH(s) {
 function ts(x) { return (x && typeof x.toMillis === 'function') ? x.toMillis() : Date.now(); }
 function fail(err) {
   console.error(err);
-  const msg = err && err.code === 'permission-denied'
-    ? 'Sin permiso: entra con una cuenta @' + ALLOWED_DOMAIN
-    : 'Error al guardar: ' + (err && err.message ? err.message : err);
-  showToast(msg, 'warning');
+  showToast(err && err.code === 'permission-denied'
+    ? 'No tienes permiso para eso en esta fase'
+    : 'Error: ' + (err && err.message ? err.message : err), 'warning');
 }
-function setLive(status) {
-  document.getElementById('liveDot').className = 'live-dot' + (status ? ' ' + status : '');
+function setLive(s) { $('liveDot').className = 'live-dot' + (s ? ' ' + s : ''); }
+function randomId(n) {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
+  let s = ''; for (const b of crypto.getRandomValues(new Uint8Array(n))) s += chars[b % chars.length];
+  return s;
 }
+function slug(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+}
+function fmtDate(d) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : d; }
+function myName() { return (user && (user.displayName || (user.email || '').split('@')[0])) || 'Anónimo'; }
+
+/* ============ PERMISOS (espejo de las reglas) ============ */
+const phase = () => sala ? sala.phase : 'write';
+const isFac = () => !!(sala && user && sala.facilitator === user.uid);
+const isMine = p => !!(user && p.createdBy === user.uid);
+const canAdd = () => ['write', 'reveal'].includes(phase()) || isFac();
+const canEdit = p => (isMine(p) && ['write', 'reveal'].includes(phase())) || isFac();
+const canDelete = p => isMine(p) || isFac();
+const canRegroup = () => ['write', 'reveal'].includes(phase()) || isFac();
+const canImport = () => phase() === 'reveal' || (isFac() && phase() !== 'write');
 
 /* ============ AUTH ============ */
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
 
-document.getElementById('loginBtn').onclick = async () => {
-  document.getElementById('loginErr').textContent = '';
+async function login() {
+  $('loginErr').textContent = '';
   try { await signInWithPopup(auth, provider); }
   catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+      return signInWithRedirect(auth, provider);
+    }
     if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request')
-      document.getElementById('loginErr').textContent = 'No se pudo iniciar sesión (' + e.code + ')';
+      $('loginErr').textContent = 'No se pudo iniciar sesión (' + e.code + ')';
   }
-};
-document.getElementById('logoutBtn').onclick = () => signOut(auth);
+}
+$('loginBtn').addEventListener('click', login);
 
 onAuthStateChanged(auth, async u => {
-  unsubs.forEach(f => f()); unsubs = [];
-  if (!u) {
-    user = null;
-    document.getElementById('login').classList.remove('hide');
-    setLive('');
-    return;
-  }
+  stopAll();
+  if (!u) { user = null; $('login').classList.remove('hide'); hidePortada(); return; }
   const email = (u.email || '').toLowerCase();
   if (!u.emailVerified || !email.endsWith('@' + ALLOWED_DOMAIN)) {
     await signOut(auth);
-    document.getElementById('loginErr').textContent = 'Solo se admiten cuentas @' + ALLOWED_DOMAIN + ' (has entrado con ' + email + ').';
+    $('loginErr').textContent = 'Solo se admiten cuentas @' + ALLOWED_DOMAIN + ' (has entrado con ' + email + ').';
     return;
   }
   user = u;
-  document.getElementById('login').classList.add('hide');
-  document.getElementById('userChip').innerHTML =
+  $('login').classList.add('hide');
+  $('userChip').innerHTML =
     (u.photoURL ? '<img src="' + escH(u.photoURL) + '" alt="" referrerpolicy="no-referrer">' : '') +
-    '<span>' + escH(u.displayName || email) + '</span>';
-  subscribe();
+    '<span>' + escH(myName()) + '</span>';
+  if (SALA) openSala(); else showPortada('new');
 });
 
-function subscribe() {
+/* ============ PORTADA ============ */
+function showPortada(mode) {
+  $('portadaErr').textContent = '';
+  $('portadaNew').style.display = mode === 'new' ? '' : 'none';
+  $('portadaMissing').style.display = mode === 'missing' ? '' : 'none';
+  $('portadaTitle').textContent = mode === 'missing' ? 'Esta sala no existe todavía' : 'Retro del Barco';
+  $('portadaText').innerHTML = mode === 'missing'
+    ? 'No hay ninguna retro abierta con el código <b>' + escH(SALA) + '</b>. Revisa el enlace o créala tú.'
+    : 'Crea una sala para tu retro (serás quien facilita) o únete a una con el enlace que te han pasado.';
+  $('portada').classList.remove('hide');
+}
+function hidePortada() { $('portada').classList.add('hide'); }
+
+async function createSala(id, title) {
+  try {
+    await setDoc(doc(db, 'salas', id), {
+      facilitator: user.uid, facilitatorName: myName(), phase: 'write',
+      maxVotes: MAX_VOTES, title: String(title || '').slice(0, 40), createdAt: serverTimestamp()
+    });
+    if (SALA !== id) {
+      SALA = id;
+      history.pushState(null, '', location.pathname + '?sala=' + encodeURIComponent(id));
+      openSala();
+    }
+    showToast('Sala creada. Copia el enlace y pásalo al equipo', 'success');
+  } catch (e) {
+    $('portadaErr').textContent = e.code === 'permission-denied'
+      ? 'No se pudo crear: esa sala ya existe o el código no es válido.' : 'Error: ' + e.message;
+  }
+}
+function joinSala() {
+  const raw = $('joinInput').value.trim();
+  let id = raw;
+  try { const u = new URL(raw); id = u.searchParams.get('sala') || ''; } catch (_) {}
+  if (!SALA_RE.test(id)) { $('portadaErr').textContent = 'Ese enlace o código no es válido.'; return; }
+  location.search = '?sala=' + encodeURIComponent(id);
+}
+
+/* ============ SUSCRIPCIONES ============ */
+function stopAll() {
+  unsubs.forEach(f => f()); unsubs = [];
+  if (unsubP) unsubP(); unsubP = null; pMode = null;
+  sala = null; postits = []; votes = {}; actions = [];
+}
+
+function openSala() {
+  stopAll();
   firstLoad = true;
-  unsubs.push(onSnapshot(colP, snap => {
-    state.postits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  $('salaName').textContent = SALA;
+  let sideSubs = false;
+  unsubs.push(onSnapshot(doc(db, 'salas', SALA), snap => {
+    if (!snap.exists()) { sala = null; setLive(''); showPortada('missing'); return; }
+    hidePortada();
+    sala = snap.data();
+    if (sala.title) $('salaName').textContent = sala.title + ' · ' + SALA;
+    ensurePostitSub();
+    if (!sideSubs) {
+      sideSubs = true;
+      unsubs.push(onSnapshot(colV(), s => {
+        votes = {}; s.docs.forEach(d => votes[d.id] = d.data());
+        scheduleRender();
+      }, onSubErr));
+      unsubs.push(onSnapshot(colA(), s => {
+        actions = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderActions();
+      }, onSubErr));
+    }
     setLive('on');
+    renderAll();
+  }, onSubErr));
+}
+function onSubErr(err) { setLive('err'); fail(err); }
+
+// En "Escribir" solo se puede leer lo propio (las reglas lo imponen), así que la consulta cambia por fase.
+function ensurePostitSub() {
+  const mode = phase() === 'write' ? 'mine' : 'all';
+  if (mode === pMode) return;
+  if (unsubP) unsubP();
+  pMode = mode;
+  postits = [];
+  const q = mode === 'mine' ? query(colP(), where('createdBy', '==', user.uid)) : colP();
+  unsubP = onSnapshot(q, snap => {
+    postits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     scheduleRender();
-  }, err => { setLive('err'); fail(err); }));
-  unsubs.push(onSnapshot(colA, snap => {
-    state.actions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderActions();
-  }, err => { setLive('err'); fail(err); }));
+  }, onSubErr);
 }
 
-/* ============ HEADER ACTIONS ============ */
-document.getElementById('copyLinkBtn').onclick = async () => {
-  try { await navigator.clipboard.writeText(location.href); showToast('Enlace copiado. Pásalo al equipo', 'success'); }
-  catch (_) { prompt('Copia este enlace:', location.href); }
-};
-document.getElementById('newSalaBtn').onclick = () => {
-  if (!confirm('¿Crear una sala nueva y vacía? Esta seguirá disponible con su enlace.')) return;
-  location.search = '?sala=' + newSalaId();
-};
-
-/* ============ POST-ITS ============ */
-function openModal(zone) {
-  document.getElementById('pZone').value = zone;
-  document.getElementById('pAuthor').value = localStorage.getItem('retroBarco_user') || (user && user.displayName) || '';
-  document.getElementById('pText').value = '';
-  document.getElementById('modalTitle').textContent = 'Nuevo post-it · ' + ZONES[zone].name;
-  document.getElementById('modal').classList.add('show');
-  setTimeout(() => document.getElementById('pText').focus(), 50);
+/* ============ GRUPOS Y VOTOS ============ */
+function computeGroups() {
+  const byId = new Map(postits.map(p => [p.id, p]));
+  const rootOf = p => {
+    const seen = new Set([p.id]); let cur = p;
+    while (cur.mergedInto && byId.has(cur.mergedInto)) {
+      if (seen.has(cur.mergedInto)) return p;
+      seen.add(cur.mergedInto); cur = byId.get(cur.mergedInto);
+    }
+    return cur;
+  };
+  const groups = new Map();
+  postits.forEach(p => {
+    const r = rootOf(p);
+    if (!groups.has(r.id)) groups.set(r.id, { root: r, members: [] });
+    if (r !== p) groups.get(r.id).members.push(p);
+  });
+  return groups;
 }
-function closeModal() { document.getElementById('modal').classList.remove('show'); }
-
-function savePostit() {
-  const zone = document.getElementById('pZone').value;
-  const author = document.getElementById('pAuthor').value.trim() || (user && user.displayName) || 'Anónimo';
-  const text = document.getElementById('pText').value.trim();
-  if (!text) { alert('Escribe la idea antes de añadirla.'); return; }
-  try { localStorage.setItem('retroBarco_user', author); } catch (_) {}
-  closeModal();
-  addDoc(colP, {
-    zone, author, text, votes: 0, merged: [],
-    createdBy: user.uid, createdAt: serverTimestamp()
-  }).catch(fail);
+const groupIds = g => [g.root.id, ...g.members.map(m => m.id)];
+function voteCounts() {
+  const c = {};
+  Object.values(votes).forEach(v => (v.ids || []).forEach(id => c[id] = (c[id] || 0) + 1));
+  return c;
 }
-
-function vote(id) { updateDoc(doc(colP, id), { votes: increment(1) }).catch(fail); }
-function delPostit(id) {
-  if (!confirm('¿Eliminar este post-it? Se borra para todos.')) return;
-  deleteDoc(doc(colP, id)).catch(fail);
+function myVoteIds() {
+  const existing = new Set(postits.map(p => p.id));
+  return ((user && votes[user.uid] && votes[user.uid].ids) || []).filter(id => existing.has(id));
+}
+function saveMyVotes(ids) {
+  return setDoc(doc(colV(), user.uid), { ids, name: myName() }).catch(fail);
+}
+function vote(rootId) {
+  if (phase() !== 'vote') return;
+  const ids = myVoteIds();
+  if (ids.length >= MAX_VOTES) { showToast('Ya has usado tus ' + MAX_VOTES + ' votos. Quita uno con «−» para moverlo', 'warning'); return; }
+  ids.push(rootId);
+  saveMyVotes(ids);
+}
+function unvote(rootId) {
+  const g = computeGroups().get(rootId);
+  if (!g) return;
+  const members = new Set(groupIds(g));
+  const ids = myVoteIds();
+  const idx = ids.findIndex(id => members.has(id));
+  if (idx < 0) return;
+  ids.splice(idx, 1);
+  saveMyVotes(ids);
 }
 
 /* ============ RENDER ============ */
 let pendingRender = false;
-function scheduleRender() {
-  if (dragData) { pendingRender = true; return; }
-  render();
+function scheduleRender() { if (dragData) { pendingRender = true; return; } renderAll(); }
+
+function renderAll() {
+  pendingRender = false;
+  document.body.classList.toggle('can-add', !!sala && canAdd());
+  document.body.classList.toggle('can-import', !!sala && canImport());
+  renderPhaseBar();
+  renderBoard();
+  renderActions();
+  renderPeople();
+  if (openGroupId) openGroup(openGroupId, true);
 }
 
-function render() {
-  pendingRender = false;
+function renderPhaseBar() {
+  const cur = PHASES.findIndex(p => p.id === phase());
+  $('phaseSteps').innerHTML = PHASES.map((p, i) =>
+    '<button class="phase-step' + (i === cur ? ' active' : i < cur ? ' done' : '') + '"' +
+    (isFac() && i !== cur ? '' : ' disabled') + ' data-act="phase" data-id="' + p.id + '">' +
+    (i < cur ? '✓ ' : '') + escH(p.label) + '<small>' + escH(p.hint) + '</small></button>'
+  ).join('');
+  $('phaseInfo').innerHTML = !sala ? '' : isFac()
+    ? '🧭 <b>Facilitas tú.</b> Pulsa una fase para pasar a ella; todos la verán al momento.'
+    : '🧭 Facilita <b>' + escH(sala.facilitatorName || '—') + '</b>, que es quien cambia de fase.';
+  const chip = $('votesChip');
+  if (phase() === 'vote') {
+    const left = MAX_VOTES - myVoteIds().length;
+    chip.className = 'votes-chip' + (left === 0 ? ' empty' : '');
+    chip.textContent = left > 0 ? '🗳️ Te quedan ' + left + ' de ' + MAX_VOTES + ' votos' : '🗳️ Has usado tus ' + MAX_VOTES + ' votos';
+  } else { chip.className = ''; chip.textContent = ''; }
+}
+
+function renderBoard() {
+  const groups = computeGroups();
+  const counts = voteCounts();
+  const total = g => groupIds(g).reduce((n, id) => n + (counts[id] || 0), 0);
+  const mine = myVoteIds();
+  const ph = phase();
   Object.keys(ZONES).forEach(z => {
     const list = document.querySelector('[data-list="' + z + '"]');
     list.innerHTML = '';
-    const items = state.postits.filter(p => p.zone === z)
-      .sort((a, b) => (b.votes || 0) - (a.votes || 0) || ts(a.createdAt) - ts(b.createdAt));
-    if (items.length === 0) list.innerHTML = '<div class="empty">Aún no hay post-its · pulsa &quot;+ Post-it&quot;</div>';
-    items.forEach((p, i) => {
+    const items = [...groups.values()].filter(g => g.root.zone === z);
+    if (ph === 'close') items.sort((a, b) => total(b) - total(a) || ts(a.root.createdAt) - ts(b.root.createdAt));
+    else items.sort((a, b) => ts(a.root.createdAt) - ts(b.root.createdAt));
+    if (!items.length) {
+      list.innerHTML = '<div class="empty">' + (!sala ? '' : ph === 'write'
+        ? 'Aún no has escrito nada aquí · pulsa &quot;+ Post-it&quot;'
+        : 'Sin post-its en esta zona') + '</div>';
+    }
+    items.forEach((g, i) => {
+      const p = g.root;
+      const n = 1 + g.members.length;
       const el = document.createElement('div');
-      const mergedCount = 1 + ((p.merged && p.merged.length) || 0);
-      const classes = ['postit'];
-      if (mergedCount >= 2) classes.push('has-merged');
-      if (mergedCount >= 3) classes.push('has-merged-3');
-      if (!firstLoad && !seenIds.has(p.id)) classes.push('fresh');
-      el.className = classes.join(' ');
+      const cls = ['postit'];
+      if (n >= 2) cls.push('has-merged');
+      if (n >= 3) cls.push('has-merged-3');
+      if (!firstLoad && !seenIds.has(p.id)) cls.push('fresh');
+      el.className = cls.join(' ');
       el.dataset.zone = z;
       el.dataset.id = p.id;
-      el.draggable = true;
       el.style.setProperty('--rot', ((i % 3) - 1) + 'deg');
-      const bg = getMergedColor(z, mergedCount);
+      const bg = getMergedColor(z, n);
       el.style.setProperty('--postit-bg', bg);
       el.style.background = bg;
+      const ids = new Set(groupIds(g));
+      const myCount = mine.filter(id => ids.has(id)).length;
+      let act = '';
+      if (ph === 'vote') {
+        act += '<button class="vote' + (myCount ? ' mine' : '') + '" data-act="vote" data-id="' + escH(p.id) + '">👍 Votar' +
+          (myCount ? ' ' + '●'.repeat(myCount) : '') + '</button>';
+        if (myCount) act += '<button class="vote" data-act="unvote" data-id="' + escH(p.id) + '" title="Quitar uno de tus votos">−</button>';
+      } else if (ph === 'close') {
+        act += '<span class="vote static">👍 ' + total(g) + '</span>';
+      }
+      act += '<span class="spacer"></span>';
+      if (canEdit(p)) act += '<button class="mini" data-act="edit" data-id="' + escH(p.id) + '" title="Editar">✎</button>';
+      if (canDelete(p)) act += '<button class="mini del" data-act="delete" data-id="' + escH(p.id) + '" title="Eliminar">✕</button>';
       el.innerHTML =
-        (mergedCount > 1 ? '<button class="merge-badge" title="Ver ' + mergedCount + ' pins fusionados" onclick="event.stopPropagation(); openMergedModal(\'' + p.id + '\')">' + mergedCount + '</button>' : '') +
+        (n > 1 ? '<button class="merge-badge" data-act="group" data-id="' + escH(p.id) + '" title="Ver los ' + n + ' post-its del grupo">' + n + '</button>' : '') +
         '<div class="author">' + escH(p.author) + '</div>' +
         '<div class="text">' + escH(p.text) + '</div>' +
-        '<div class="actions">' +
-          '<button class="vote" onclick="event.stopPropagation(); vote(\'' + p.id + '\')">&#x1F44D; ' + (p.votes || 0) + '</button>' +
-          '<button class="del" title="Eliminar" onclick="event.stopPropagation(); delPostit(\'' + p.id + '\')">&#x2715;</button>' +
-        '</div>';
-      attachPostitDragHandlers(el, p);
+        '<div class="actions">' + act + '</div>';
+      if (canRegroup()) { el.draggable = true; attachPostitDragHandlers(el, p); }
       list.appendChild(el);
     });
   });
-  state.postits.forEach(p => seenIds.add(p.id));
-  firstLoad = false;
+  postits.forEach(p => seenIds.add(p.id));
+  if (sala) firstLoad = false;
   attachZoneDragHandlers();
-  if (openMergedId) openMergedModal(openMergedId, true);
+}
+
+function renderPeople() {
+  const names = new Set([myName()]);
+  postits.forEach(p => p.author && names.add(p.author));
+  Object.values(votes).forEach(v => v.name && names.add(v.name));
+  if (sala && sala.facilitatorName) names.add(sala.facilitatorName);
+  $('peopleList').innerHTML = [...names].sort().map(n => '<option value="' + escH(n) + '">').join('');
+}
+
+/* ============ POST-ITS ============ */
+function openModal(zone, id) {
+  editingId = id || null;
+  const p = id ? postits.find(x => x.id === id) : null;
+  $('modal').dataset.zone = zone || (p && p.zone) || '';
+  $('pText').value = p ? p.text : '';
+  updateCounter();
+  $('modalTitle').textContent = p ? 'Editar post-it' : 'Nuevo post-it · ' + ZONES[zone].name;
+  $('saveBtn').textContent = p ? 'Guardar' : 'Añadir';
+  $('modal').classList.add('show');
+  setTimeout(() => $('pText').focus(), 50);
+}
+function closeModal() { $('modal').classList.remove('show'); editingId = null; }
+function updateCounter() { $('pCounter').textContent = $('pText').value.length + '/500'; }
+$('pText').addEventListener('input', updateCounter);
+
+function savePostit() {
+  const text = $('pText').value.trim();
+  if (!text) { showToast('Escribe la idea antes de guardarla', 'warning'); return; }
+  const id = editingId;
+  const zone = $('modal').dataset.zone;
+  closeModal();
+  if (id) { updateDoc(doc(colP(), id), { text }).catch(fail); return; }
+  addDoc(colP(), {
+    zone, text, author: myName(), createdBy: user.uid, mergedInto: null, createdAt: serverTimestamp()
+  }).catch(fail);
+}
+
+function deletePostit(id) {
+  const g = computeGroups().get(id);
+  const extra = g && g.members.length ? '\nLos ' + g.members.length + ' post-its agrupados con él volverán a aparecer sueltos.' : '';
+  if (!confirm('¿Eliminar este post-it? Se borra para todos.' + extra)) return;
+  deleteDoc(doc(colP(), id)).catch(fail);
 }
 
 /* ============ ACCIONABLES ============ */
 function addAction() {
-  const text = document.getElementById('actText').value.trim();
-  const owner = document.getElementById('actOwner').value.trim();
-  const due = document.getElementById('actDue').value;
-  if (!text) { alert('Describe la acción.'); return; }
-  addDoc(colA, { text, owner, due, done: false, createdBy: user.uid, createdAt: serverTimestamp() }).catch(fail);
-  document.getElementById('actText').value = '';
-  document.getElementById('actOwner').value = '';
-  document.getElementById('actDue').value = '';
-}
-function toggleAction(id) {
-  const a = state.actions.find(a => a.id === id);
-  if (a) updateDoc(doc(colA, id), { done: !a.done }).catch(fail);
-}
-function delAction(id) {
-  if (!confirm('¿Eliminar este accionable?')) return;
-  deleteDoc(doc(colA, id)).catch(fail);
+  const text = $('actText').value.trim();
+  if (!text) { showToast('Describe la acción', 'warning'); return; }
+  addDoc(colA(), {
+    text, owner: $('actOwner').value.trim(), due: $('actDue').value, done: false,
+    createdBy: user.uid, createdAt: serverTimestamp()
+  }).catch(fail);
+  $('actText').value = ''; $('actOwner').value = ''; $('actDue').value = '';
 }
 function renderActions() {
-  const list = document.getElementById('actionList');
+  const list = $('actionList');
   list.innerHTML = '';
-  if (state.actions.length === 0) {
+  if (!actions.length) {
     list.innerHTML = '<div class="empty">Aún no hay accionables. Defínelos al final de la retro.</div>';
     return;
   }
-  state.actions.slice().sort((a, b) => ts(a.createdAt) - ts(b.createdAt)).forEach(a => {
+  actions.slice().sort((a, b) => ts(a.createdAt) - ts(b.createdAt)).forEach(a => {
     const el = document.createElement('div');
     el.className = 'action-item' + (a.done ? ' done' : '');
     el.innerHTML =
-      '<input type="checkbox"' + (a.done ? ' checked' : '') + ' onchange="toggleAction(\'' + a.id + '\')">' +
+      '<input type="checkbox"' + (a.done ? ' checked' : '') + ' data-act="toggleAction" data-id="' + escH(a.id) + '">' +
       '<div>' + escH(a.text) + '</div>' +
       '<div>' + (a.owner ? '&#x1F464; ' + escH(a.owner) : '<span style="color:#adb5bd">sin responsable</span>') + '</div>' +
-      '<div>' + (a.due ? '&#x1F4C5; ' + escH(a.due) : '<span style="color:#adb5bd">sin fecha</span>') + '</div>' +
-      '<button class="del" onclick="delAction(\'' + a.id + '\')">&#x2715;</button>';
+      '<div>' + (a.due ? '&#x1F4C5; ' + escH(fmtDate(a.due)) : '<span style="color:#adb5bd">sin fecha</span>') + '</div>' +
+      ((user && (a.createdBy === user.uid || isFac()))
+        ? '<button class="mini del" data-act="delAction" data-id="' + escH(a.id) + '" title="Eliminar">✕</button>' : '<span></span>');
     list.appendChild(el);
   });
 }
 
+/* ============ GRUPO (modal) ============ */
+function openGroup(id, refreshOnly) {
+  const g = computeGroups().get(id);
+  if (!g || !g.members.length) { if (refreshOnly) closeGroup(); return; }
+  openGroupId = id;
+  $('mergedModalTitle').textContent = '🔗 Grupo (' + (1 + g.members.length) + ' post-its)';
+  const item = (p, main) => {
+    const fromOther = !main && p.zone !== g.root.zone && ZONES[p.zone];
+    return '<div class="merged-item' + (main ? ' main' : '') + '">' +
+      '<div class="merged-item-header"><span class="author">' + escH(p.author) + '</span>' +
+      (main ? '<span class="pill main">Principal</span>' : '') +
+      (fromOther ? '<span class="pill zone">de ' + escH(ZONES[p.zone].name) + '</span>' : '') + '</div>' +
+      '<div class="merged-item-text">' + escH(p.text) + '</div>' +
+      (!main && canRegroup() ? '<div class="merged-item-footer"><button class="unmerge" data-act="unmerge" data-id="' + escH(p.id) + '">↩ Separar</button></div>' : '') +
+      '</div>';
+  };
+  $('mergedList').innerHTML = item(g.root, true) + g.members.map(m => item(m, false)).join('');
+  $('mergedModal').classList.add('show');
+}
+function closeGroup() { openGroupId = null; $('mergedModal').classList.remove('show'); }
+
+/* ============ DRAG & DROP ============ */
+const ZONE_COLORS = {
+  wind: { h: 47, s: 87, l: 70 }, anchor: { h: 0, s: 100, l: 73 },
+  rocks: { h: 198, s: 12, l: 73 }, island: { h: 163, s: 83, l: 64 }
+};
+function getMergedColor(zone, count) {
+  const c = ZONE_COLORS[zone]; if (!c) return '';
+  const m = Math.max(0, (count || 1) - 1);
+  return 'hsl(' + c.h + ', ' + Math.min(c.s + Math.min(m * 14, 55), 100) + '%, ' + Math.max(c.l - Math.min(m * 3, 22), 38) + '%)';
+}
+let dragData = null;
+const truncate = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+function cleanupDragVisuals() {
+  document.querySelectorAll('.merge-target').forEach(e => e.classList.remove('merge-target'));
+  document.querySelectorAll('.move-target').forEach(e => e.classList.remove('move-target'));
+}
+function setIndicator(e, text, type) {
+  const ind = $('dragIndicator');
+  ind.textContent = text; ind.className = 'drag-indicator show ' + (type || '');
+  ind.style.left = (e.clientX + 16) + 'px'; ind.style.top = (e.clientY + 18) + 'px';
+}
+function endDrag() {
+  cleanupDragVisuals();
+  $('dragIndicator').className = 'drag-indicator';
+  dragData = null;
+  if (pendingRender) renderAll();
+}
+function attachPostitDragHandlers(el, p) {
+  el.addEventListener('dragstart', e => {
+    dragData = { id: p.id, zone: p.zone };
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'copyMove';
+    try { e.dataTransfer.setData('text/plain', p.id); } catch (_) {}
+    const ind = $('dragIndicator');
+    ind.textContent = 'Suelta sobre una zona o sobre otro post-it'; ind.className = 'drag-indicator show neutral';
+  });
+  el.addEventListener('dragend', () => { el.classList.remove('dragging'); endDrag(); });
+  el.addEventListener('dragover', e => {
+    if (!dragData || dragData.id === p.id) return;
+    e.preventDefault(); e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    cleanupDragVisuals(); el.classList.add('merge-target');
+    setIndicator(e, 'Agrupar con: "' + truncate(p.text, 30) + '"', 'merge');
+  });
+  el.addEventListener('drop', e => {
+    if (!dragData || dragData.id === p.id) return;
+    e.preventDefault(); e.stopPropagation();
+    const src = dragData.id; endDrag(); mergeInto(src, p.id);
+  });
+}
+function attachZoneDragHandlers() {
+  document.querySelectorAll('.zone').forEach(zoneEl => {
+    if (zoneEl._dragSetup) return;
+    zoneEl._dragSetup = true;
+    const z = zoneEl.dataset.zone;
+    zoneEl.addEventListener('dragover', e => {
+      if (!dragData || (e.target.closest && e.target.closest('.postit'))) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move'; cleanupDragVisuals();
+      if (dragData.zone !== z) { zoneEl.classList.add('move-target'); setIndicator(e, 'Mover a ' + ZONES[z].name, 'move'); }
+      else setIndicator(e, 'Misma zona — suelta sobre otro post-it para agrupar', 'neutral');
+    });
+    zoneEl.addEventListener('drop', e => {
+      if (!dragData || (e.target.closest && e.target.closest('.postit'))) return;
+      e.preventDefault();
+      const d = dragData; endDrag();
+      if (d.zone !== z) updateDoc(doc(colP(), d.id), { zone: z })
+        .then(() => showToast('Movido a ' + ZONES[z].name, 'success')).catch(fail);
+    });
+  });
+}
+document.addEventListener('dragover', e => {
+  if (!dragData) return;
+  const ind = $('dragIndicator');
+  ind.style.left = (e.clientX + 16) + 'px'; ind.style.top = (e.clientY + 18) + 'px';
+});
+
+// Agrupar = el post-it arrastrado (y su grupo) apunta al principal destino. No se copia ni borra nada,
+// así "Separar" devuelve cada post-it intacto, con su zona, su autor y sus votos.
+async function mergeInto(srcId, tgtId) {
+  const groups = computeGroups();
+  const s = groups.get(srcId), t = groups.get(tgtId);
+  if (!s || !t || srcId === tgtId) return;
+  const batch = writeBatch(db);
+  batch.update(doc(colP(), srcId), { mergedInto: tgtId });
+  s.members.forEach(m => batch.update(doc(colP(), m.id), { mergedInto: tgtId }));
+  try {
+    await batch.commit();
+    showToast('Agrupados (' + (1 + t.members.length + 1 + s.members.length) + ' post-its)', 'success');
+  } catch (e) { fail(e); }
+}
+function unmerge(id) {
+  updateDoc(doc(colP(), id), { mergedInto: null })
+    .then(() => showToast('Post-it separado', 'success')).catch(fail);
+}
+
 /* ============ IMPORTAR .retro ANTIGUOS ============ */
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
+const dropzone = $('dropzone'), fileInput = $('fileInput');
 dropzone.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
 dropzone.addEventListener('dragover', e => { if (dragData) return; e.preventDefault(); dropzone.classList.add('dragover'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
 dropzone.addEventListener('drop', e => {
   if (dragData) return;
-  e.preventDefault(); dropzone.classList.remove('dragover');
-  handleFiles(e.dataTransfer.files);
+  e.preventDefault(); dropzone.classList.remove('dragover'); handleFiles(e.dataTransfer.files);
 });
 
 async function handleFiles(files) {
-  const existing = new Set(state.postits.map(p => p.id));
-  state.postits.forEach(p => (p.merged || []).forEach(m => m.id && existing.add(m.id)));
+  if (!canImport()) { showToast('Importa en la fase «Compartir y agrupar»', 'warning'); return; }
+  const existing = new Set(postits.map(p => p.id));
   let added = 0, skipped = 0; const authors = new Set();
   const batch = writeBatch(db);
+  const clean = (p, fallbackAuthor, file) => ({
+    zone: p.zone, text: String(p.text).slice(0, 500),
+    author: String(p.author || fallbackAuthor || 'Anónimo').slice(0, 80),
+    createdBy: user.uid, createdAt: serverTimestamp(), importedFrom: String(file).slice(0, 120)
+  });
   for (const file of Array.from(files)) {
     try {
       const data = JSON.parse(await file.text());
@@ -720,257 +1060,128 @@ async function handleFiles(files) {
       if (data.author) authors.add(data.author);
       data.postits.forEach(p => {
         if (!p || !p.text || !ZONES[p.zone]) return;
-        const id = /^[A-Za-z0-9_-]{1,100}$/.test(p.id || '') ? p.id : null;
-        if (id && existing.has(id)) { skipped++; return; }
-        const ref = id ? doc(colP, id) : doc(colP);
+        if (DOC_RE.test(p.id || '') && existing.has(p.id)) { skipped++; return; }
+        const ref = DOC_RE.test(p.id || '') ? doc(colP(), p.id) : doc(colP());
         existing.add(ref.id);
-        batch.set(ref, {
-          zone: p.zone, author: String(p.author || data.author || 'Anónimo'), text: String(p.text),
-          votes: Number(p.votes) || 0,
-          merged: Array.isArray(p.merged) ? p.merged.map(m => ({
-            id: m.id || '', author: String(m.author || ''), text: String(m.text || ''),
-            originZone: ZONES[m.originZone] ? m.originZone : p.zone, votes: Number(m.votes) || 0
-          })) : [],
-          createdBy: user.uid, createdAt: serverTimestamp(), importedFrom: file.name
-        });
+        batch.set(ref, { ...clean(p, data.author, file.name), mergedInto: null });
         added++;
+        (Array.isArray(p.merged) ? p.merged : []).forEach(m => {
+          if (!m || !m.text) return;
+          if (DOC_RE.test(m.id || '') && existing.has(m.id)) { skipped++; return; }
+          const cref = DOC_RE.test(m.id || '') ? doc(colP(), m.id) : doc(colP());
+          existing.add(cref.id);
+          batch.set(cref, { ...clean({ ...m, zone: ZONES[m.originZone] ? m.originZone : p.zone }, data.author, file.name), mergedInto: ref.id });
+          added++;
+        });
       });
     } catch (e) { showToast(file.name + ': error al leer el archivo', 'warning'); }
   }
   if (!added) { if (skipped) showToast('Sin post-its nuevos · ' + skipped + ' duplicados ignorados', 'warning'); return; }
   try {
     await batch.commit();
-    showToast('Importados ' + added + ' post-its' + (authors.size ? ' de ' + Array.from(authors).join(', ') : '') +
+    showToast('Importados ' + added + ' post-its' + (authors.size ? ' de ' + [...authors].join(', ') : '') +
       (skipped ? ' · ' + skipped + ' duplicados ignorados' : ''), 'success');
   } catch (e) { fail(e); }
 }
 
 /* ============ RESUMEN .md ============ */
 function exportSummaryMd() {
-  let md = '# Retro del Barco · Product Support ↔ Desarrollo\n_' + new Date().toLocaleDateString('es-ES') + ' · sala ' + SALA + '_\n\n';
+  const groups = computeGroups(), counts = voteCounts();
+  const total = g => groupIds(g).reduce((n, id) => n + (counts[id] || 0), 0);
+  const showVotes = phase() === 'close';
+  let md = '# Retro del Barco · Product Support ↔ Desarrollo\n_' + new Date().toLocaleDateString('es-ES') +
+    ' · sala ' + (sala && sala.title ? sala.title + ' (' + SALA + ')' : SALA) + '_\n\n';
+  if (phase() === 'write') md += '> ⚠️ Exportado en la fase «Escribir»: solo incluye tus post-its.\n\n';
   Object.entries(ZONES).forEach(([z, info]) => {
     md += '## ' + info.name + '\n';
-    const items = state.postits.filter(p => p.zone === z).sort((a, b) => (b.votes || 0) - (a.votes || 0));
+    const items = [...groups.values()].filter(g => g.root.zone === z)
+      .sort((a, b) => total(b) - total(a) || ts(a.root.createdAt) - ts(b.root.createdAt));
     if (!items.length) md += '_(vacío)_\n';
-    items.forEach(p => {
-      md += '- (' + (p.votes || 0) + ' 👍) **' + p.author + '**: ' + p.text + '\n';
-      (p.merged || []).forEach(m => { md += '  - **' + m.author + '**: ' + m.text + '\n'; });
+    items.forEach(g => {
+      md += '- ' + (showVotes ? '(' + total(g) + ' 👍) ' : '') + '**' + g.root.author + '**: ' + g.root.text + '\n';
+      g.members.forEach(m => { md += '  - **' + m.author + '**: ' + m.text + '\n'; });
     });
     md += '\n';
   });
   md += '## ✅ Accionables\n';
-  if (!state.actions.length) md += '_(vacío)_\n';
-  state.actions.slice().sort((a, b) => ts(a.createdAt) - ts(b.createdAt)).forEach(a => {
-    md += '- [' + (a.done ? 'x' : ' ') + '] ' + a.text + (a.owner ? ' · 👤 ' + a.owner : '') + (a.due ? ' · 📅 ' + a.due : '') + '\n';
+  if (!actions.length) md += '_(vacío)_\n';
+  actions.slice().sort((a, b) => ts(a.createdAt) - ts(b.createdAt)).forEach(a => {
+    md += '- [' + (a.done ? 'x' : ' ') + '] ' + a.text + (a.owner ? ' · 👤 ' + a.owner : '') + (a.due ? ' · 📅 ' + fmtDate(a.due) : '') + '\n';
   });
-  const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
   a.download = 'retro-barco-resumen-' + new Date().toISOString().slice(0, 10) + '.md';
   a.click();
 }
-document.getElementById('exportSummaryBtn').onclick = exportSummaryMd;
 
-/* ============ DRAG & DROP + MERGE ============ */
-const ZONE_COLORS = {
-  wind:   { h: 47,  s: 87,  l: 70 },
-  anchor: { h: 0,   s: 100, l: 73 },
-  rocks:  { h: 198, s: 12,  l: 73 },
-  island: { h: 163, s: 83,  l: 64 }
-};
-function getMergedColor(zone, count) {
-  const c = ZONE_COLORS[zone];
-  if (!c) return '';
-  const merges = Math.max(0, (count || 1) - 1);
-  const newS = Math.min(c.s + Math.min(merges * 14, 55), 100);
-  const newL = Math.max(c.l - Math.min(merges * 3, 22), 38);
-  return 'hsl(' + c.h + ', ' + newS + '%, ' + newL + '%)';
+/* ============ CAMBIO DE FASE ============ */
+function setPhase(id) {
+  if (!isFac() || id === phase()) return;
+  const msgs = {
+    write: '¿Volver a «Escribir»? Cada persona dejará de ver los post-its de los demás.',
+    reveal: '¿Revelar todos los post-its y pasar a «Compartir y agrupar»?',
+    vote: '¿Abrir la votación? Mientras dure no se podrá agrupar ni añadir post-its.',
+    close: '¿Cerrar la votación y mostrar los resultados?'
+  };
+  if (!confirm(msgs[id])) return;
+  updateDoc(doc(db, 'salas', SALA), { phase: id }).catch(fail);
 }
 
-let dragData = null;
-function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-function cleanupDragVisuals() {
-  document.querySelectorAll('.merge-target').forEach(e => e.classList.remove('merge-target'));
-  document.querySelectorAll('.move-target').forEach(e => e.classList.remove('move-target'));
-}
-function setIndicator(e, text, type) {
-  const ind = document.getElementById('dragIndicator');
-  ind.textContent = text;
-  ind.className = 'drag-indicator show ' + (type || '');
-  ind.style.left = (e.clientX + 16) + 'px';
-  ind.style.top = (e.clientY + 18) + 'px';
-}
-function endDrag() {
-  cleanupDragVisuals();
-  document.getElementById('dragIndicator').className = 'drag-indicator';
-  dragData = null;
-  if (pendingRender) render();
-}
-
-function attachPostitDragHandlers(el, p) {
-  el.addEventListener('dragstart', e => {
-    dragData = { id: p.id, zone: p.zone };
-    el.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'copyMove';
-    try { e.dataTransfer.setData('text/plain', p.id); } catch (_) {}
-    const ind = document.getElementById('dragIndicator');
-    ind.textContent = 'Suelta sobre una zona o un pin';
-    ind.className = 'drag-indicator show neutral';
-  });
-  el.addEventListener('dragend', () => { el.classList.remove('dragging'); endDrag(); });
-  el.addEventListener('dragover', e => {
-    if (!dragData || dragData.id === p.id) return;
-    e.preventDefault(); e.stopPropagation();
-    e.dataTransfer.dropEffect = 'copy';
-    cleanupDragVisuals();
-    el.classList.add('merge-target');
-    setIndicator(e, 'Fusionar con: "' + truncate(p.text, 30) + '"', 'merge');
-  });
-  el.addEventListener('drop', e => {
-    if (!dragData || dragData.id === p.id) return;
-    e.preventDefault(); e.stopPropagation();
-    const src = dragData.id;
-    endDrag();
-    mergePins(src, p.id);
-  });
-}
-
-function attachZoneDragHandlers() {
-  document.querySelectorAll('.zone').forEach(zoneEl => {
-    if (zoneEl._dragSetup) return;
-    zoneEl._dragSetup = true;
-    const z = zoneEl.dataset.zone;
-    zoneEl.addEventListener('dragover', e => {
-      if (!dragData) return;
-      if (e.target.closest && e.target.closest('.postit')) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      cleanupDragVisuals();
-      if (dragData.zone !== z) {
-        zoneEl.classList.add('move-target');
-        setIndicator(e, 'Mover a ' + ZONES[z].name, 'move');
-      } else {
-        setIndicator(e, 'Misma zona — suelta sobre un pin para fusionar', 'neutral');
-      }
-    });
-    zoneEl.addEventListener('drop', e => {
-      if (!dragData) return;
-      if (e.target.closest && e.target.closest('.postit')) return;
-      e.preventDefault();
-      const d = dragData;
-      endDrag();
-      if (d.zone !== z) movePin(d.id, z);
-    });
-  });
-}
-
-document.addEventListener('dragover', e => {
-  if (!dragData) return;
-  const ind = document.getElementById('dragIndicator');
-  ind.style.left = (e.clientX + 16) + 'px';
-  ind.style.top = (e.clientY + 18) + 'px';
+/* ============ EVENTOS (delegados: nada de onclick con ids en el HTML) ============ */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || t.tagName === 'INPUT') return;
+  const id = t.dataset.id;
+  switch (t.dataset.act) {
+    case 'add': openModal(t.dataset.zone); break;
+    case 'edit': openModal(null, id); break;
+    case 'delete': deletePostit(id); break;
+    case 'vote': vote(id); break;
+    case 'unvote': unvote(id); break;
+    case 'group': openGroup(id); break;
+    case 'unmerge': unmerge(id); break;
+    case 'closeMerged': closeGroup(); break;
+    case 'savePostit': savePostit(); break;
+    case 'closeModal': closeModal(); break;
+    case 'addAction': addAction(); break;
+    case 'delAction':
+      if (confirm('¿Eliminar este accionable?')) deleteDoc(doc(colA(), id)).catch(fail);
+      break;
+    case 'phase': setPhase(id); break;
+    case 'copyLink':
+      navigator.clipboard.writeText(location.href)
+        .then(() => showToast('Enlace copiado. Pásalo al equipo', 'success'))
+        .catch(() => prompt('Copia este enlace:', location.href));
+      break;
+    case 'exportMd': exportSummaryMd(); break;
+    case 'goHome': location.href = location.pathname; break;
+    case 'logout': signOut(auth); break;
+    case 'createSala': {
+      const title = $('newTitle').value.trim();
+      createSala((slug(title) || 'retro-' + new Date().toISOString().slice(0, 10)) + '-' + randomId(6), title);
+      break;
+    }
+    case 'createMissing': createSala(SALA, ''); break;
+    case 'joinSala': joinSala(); break;
+  }
 });
-
-async function mergePins(sourceId, targetId) {
-  if (sourceId === targetId) return;
-  try {
-    const total = await runTransaction(db, async tx => {
-      const sRef = doc(colP, sourceId), tRef = doc(colP, targetId);
-      const s = await tx.get(sRef), t = await tx.get(tRef);
-      if (!s.exists() || !t.exists()) throw new Error('Alguien ha cambiado estos post-its; inténtalo de nuevo');
-      const sd = s.data(), td = t.data();
-      const sChildren = sd.merged || [];
-      const childVotes = sChildren.reduce((n, m) => n + (m.votes || 0), 0);
-      const merged = (td.merged || []).concat([{
-        id: s.id, author: sd.author, text: sd.text, originZone: sd.zone,
-        votes: Math.max(0, (sd.votes || 0) - childVotes)
-      }], sChildren);
-      tx.update(tRef, { merged, votes: (td.votes || 0) + (sd.votes || 0) });
-      tx.delete(sRef);
-      return 1 + merged.length;
-    });
-    showToast('Pins fusionados (' + total + ' en total)', 'success');
-  } catch (e) { fail(e); }
-}
-
-function movePin(id, newZone) {
-  updateDoc(doc(colP, id), { zone: newZone })
-    .then(() => showToast('Movido a ' + ZONES[newZone].name, 'success'))
-    .catch(fail);
-}
-
-function openMergedModal(id, refreshOnly) {
-  const p = state.postits.find(p => p.id === id);
-  if (!p || !p.merged || !p.merged.length) { if (refreshOnly) closeMergedModal(); return; }
-  openMergedId = id;
-  document.getElementById('mergedModalTitle').textContent = '🔗 Pins fusionados (' + (1 + p.merged.length) + ')';
-  const list = document.getElementById('mergedList');
-  list.innerHTML = '';
-  const main = document.createElement('div');
-  main.className = 'merged-item main';
-  main.innerHTML =
-    '<div class="merged-item-header"><span class="author">' + escH(p.author) + '</span>' +
-    '<span class="pill main">Principal</span><span class="pill zone">' + escH(ZONES[p.zone].name) + '</span></div>' +
-    '<div class="merged-item-text">' + escH(p.text) + '</div>' +
-    '<div class="merged-item-footer"><span>👍 ' + (p.votes || 0) + ' votos acumulados</span></div>';
-  list.appendChild(main);
-  p.merged.forEach((m, idx) => {
-    const it = document.createElement('div');
-    it.className = 'merged-item';
-    const fromOther = m.originZone && m.originZone !== p.zone && ZONES[m.originZone];
-    it.innerHTML =
-      '<div class="merged-item-header"><span class="author">' + escH(m.author) + '</span>' +
-      (fromOther ? '<span class="pill zone">de ' + escH(ZONES[m.originZone].name) + '</span>' : '') + '</div>' +
-      '<div class="merged-item-text">' + escH(m.text) + '</div>' +
-      '<div class="merged-item-footer"><span>👍 ' + (m.votes || 0) + '</span>' +
-      '<button class="unmerge" onclick="unmergePin(\'' + p.id + '\', ' + idx + ')">↩ Separar</button></div>';
-    list.appendChild(it);
-  });
-  document.getElementById('mergedModal').classList.add('show');
-}
-function closeMergedModal() {
-  openMergedId = null;
-  document.getElementById('mergedModal').classList.remove('show');
-}
-
-async function unmergePin(parentId, mergedIdx) {
-  try {
-    await runTransaction(db, async tx => {
-      const pRef = doc(colP, parentId);
-      const snap = await tx.get(pRef);
-      if (!snap.exists()) throw new Error('El post-it ya no existe');
-      const pd = snap.data();
-      const merged = (pd.merged || []).slice();
-      const m = merged.splice(mergedIdx, 1)[0];
-      if (!m) throw new Error('Ese pin ya se ha separado');
-      tx.update(pRef, { merged, votes: Math.max(0, (pd.votes || 0) - (m.votes || 0)) });
-      const newRef = /^[A-Za-z0-9_-]{1,100}$/.test(m.id || '') ? doc(colP, m.id) : doc(colP);
-      tx.set(newRef, {
-        zone: ZONES[m.originZone] ? m.originZone : pd.zone,
-        author: m.author || 'Anónimo', text: m.text || '', votes: m.votes || 0, merged: [],
-        createdBy: user.uid, createdAt: serverTimestamp()
-      });
-    });
-    showToast('Pin separado', 'success');
-  } catch (e) { fail(e); }
-}
-
-document.getElementById('mergedModal').addEventListener('click', function (e) { if (e.target === this) closeMergedModal(); });
-document.getElementById('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.act === 'toggleAction') {
+    updateDoc(doc(colA(), t.dataset.id), { done: t.checked }).catch(fail);
+  }
+});
+$('mergedModal').addEventListener('click', function (e) { if (e.target === this) closeGroup(); });
+$('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+$('joinInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinSala(); });
+$('actText').addEventListener('keydown', e => { if (e.key === 'Enter') addAction(); });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); closeMergedModal(); }
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && document.getElementById('modal').classList.contains('show')) savePostit();
+  if (e.key === 'Escape') { closeModal(); closeGroup(); }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && $('modal').classList.contains('show')) savePostit();
 });
+window.addEventListener('popstate', () => location.reload());
 
-// Los handlers inline (onclick="...") necesitan estas funciones en window
-Object.assign(window, {
-  openModal, closeModal, savePostit, vote, delPostit,
-  addAction, toggleAction, delAction,
-  openMergedModal, closeMergedModal, unmergePin
-});
-
-render();
-renderActions();
+renderAll();
 </script>
 </body>
 </html>

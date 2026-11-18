@@ -1,13 +1,105 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Solo cuentas verificadas de Sesame
     function esSesame() {
       return request.auth != null
         && request.auth.token.email_verified == true
         && request.auth.token.email.matches('.*@sesametime[.]com$');
     }
-    match /salas/{sala}/{document=**} {
-      allow read, write: if esSesame();
+    function uid() { return request.auth.uid; }
+    function idValido(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,100}$'); }
+
+    function salaDe(s) { return get(/databases/$(database)/documents/salas/$(s)).data; }
+    function fase(s) { return salaDe(s).phase; }
+    function facilita(s) { return salaDe(s).facilitator == uid(); }
+
+    function salaValida(d) {
+      return d.keys().hasOnly(['facilitator', 'facilitatorName', 'phase', 'maxVotes', 'title', 'createdAt'])
+        && d.phase in ['write', 'reveal', 'vote', 'close']
+        && d.maxVotes is int && d.maxVotes >= 1 && d.maxVotes <= 10
+        && d.facilitatorName is string && d.facilitatorName.size() <= 80
+        && d.get('title', '') is string && d.get('title', '').size() <= 40;
+    }
+
+    function postitValido(d) {
+      return d.keys().hasOnly(['zone', 'text', 'author', 'createdBy', 'createdAt', 'mergedInto', 'importedFrom'])
+        && d.zone in ['wind', 'anchor', 'rocks', 'island']
+        && d.text is string && d.text.size() > 0 && d.text.size() <= 500
+        && d.author is string && d.author.size() <= 80
+        && (d.get('mergedInto', null) == null || idValido(d.get('mergedInto', null)))
+        && d.get('importedFrom', '') is string && d.get('importedFrom', '').size() <= 120;
+    }
+
+    function accionValida(d) {
+      return d.keys().hasOnly(['text', 'owner', 'due', 'done', 'createdBy', 'createdAt'])
+        && d.text is string && d.text.size() > 0 && d.text.size() <= 300
+        && d.owner is string && d.owner.size() <= 80
+        && d.due is string && d.due.size() <= 10
+        && d.done is bool;
+    }
+
+    match /salas/{s} {
+      allow read: if esSesame();
+      // Quien crea la sala la facilita; empieza siempre en "Escribir"
+      allow create: if esSesame() && s.matches('^[A-Za-z0-9_-]{3,80}$')
+        && salaValida(request.resource.data)
+        && request.resource.data.facilitator == uid()
+        && request.resource.data.phase == 'write';
+      // Solo quien facilita cambia la sala (fase, título…)
+      allow update: if esSesame() && resource.data.facilitator == uid()
+        && salaValida(request.resource.data);
+      allow delete: if false;
+
+      match /postits/{p} {
+        // En "Escribir" cada uno solo lee lo suyo
+        allow read: if esSesame()
+          && (resource.data.createdBy == uid() || fase(s) != 'write');
+        allow create: if esSesame() && idValido(p)
+          && postitValido(request.resource.data)
+          && request.resource.data.createdBy == uid()
+          && (fase(s) in ['write', 'reveal'] || facilita(s));
+        allow update: if esSesame()
+          && postitValido(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.author == resource.data.author
+          && (
+            facilita(s)
+            // El autor edita lo suyo mientras se escribe o se comparte
+            || (resource.data.createdBy == uid() && fase(s) in ['write', 'reveal'])
+            // Cualquiera puede mover o agrupar mientras se comparte
+            || (fase(s) == 'reveal'
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['zone', 'mergedInto']))
+          );
+        // Solo el autor o quien facilita pueden borrar
+        allow delete: if esSesame() && (resource.data.createdBy == uid() || facilita(s));
+      }
+
+      match /votes/{u} {
+        allow read: if esSesame();
+        // Cada uno escribe solo sus votos, solo durante "Votar" y sin pasarse del máximo
+        allow create, update: if esSesame() && u == uid() && fase(s) == 'vote'
+          && request.resource.data.keys().hasOnly(['ids', 'name'])
+          && request.resource.data.ids is list
+          && request.resource.data.ids.size() <= salaDe(s).maxVotes
+          && request.resource.data.name is string && request.resource.data.name.size() <= 80;
+        allow delete: if false;
+      }
+
+      match /actions/{a} {
+        allow read: if esSesame();
+        allow create: if esSesame() && idValido(a)
+          && accionValida(request.resource.data)
+          && request.resource.data.createdBy == uid();
+        // Cualquiera puede marcar como hecha; el resto, el autor o quien facilita
+        allow update: if esSesame()
+          && accionValida(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done'])
+              || resource.data.createdBy == uid() || facilita(s));
+        allow delete: if esSesame() && (resource.data.createdBy == uid() || facilita(s));
+      }
     }
   }
 }
