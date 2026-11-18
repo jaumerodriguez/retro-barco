@@ -85,8 +85,47 @@
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-  .page { max-width: 1376px; margin: 0 auto; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px; }
+  .page { max-width: 2560px; margin: 0 auto; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px; }
   @media (max-width: 720px) { header { padding: 12px 16px; } .page { padding: 16px 16px 40px; } }
+
+  /* TABLERO + PANEL LATERAL: en pantallas anchas los accionables y la guía van a la derecha del tablero */
+  /* En pantallas estrechas todo va en una columna: fases, guía, zonas y el resto */
+  .layout { display: flex; flex-direction: column; gap: 20px; }
+  .board, .side { display: contents; }
+  .board > .phasebar { order: -2; }
+  .side > .guide { order: -1; }
+  @media (min-width: 1600px) {
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(380px, 22vw, 480px); gap: 20px; align-items: stretch; }
+    .board { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .board > .zones { flex: 1; }
+    /* El panel acompaña al hacer scroll y nunca pasa de la altura de la pantalla, así no estira el tablero */
+    .side {
+      display: flex; flex-direction: column; gap: 20px; min-width: 0;
+      align-self: start; position: sticky; top: 83px; max-height: calc(100vh - 97px);
+      overflow-y: auto; scrollbar-width: thin; padding: 6px; margin: -6px;
+    }
+    .board > .phasebar, .side > .guide { order: 0; }
+    .side .section { padding: 20px; }
+    .side .action-form { grid-template-columns: 1fr 1fr; }
+    .side .action-form .field:first-child, .side .action-form > .btn { grid-column: 1 / -1; }
+    .side .ai-steps { grid-template-columns: 1fr; }
+  }
+
+  /* GUÍA DE LA FASE */
+  .guide { gap: 14px; }
+  .guide:empty { display: none; }
+  .guide-head { display: flex; align-items: center; gap: 12px; }
+  .guide-head .n {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--blue); color: #fff; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+  }
+  .guide-head h2 { font-size: 18px; }
+  .guide ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .guide li { background: var(--well); border-radius: var(--r-note); padding: 12px 14px; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+  .guide li b { color: var(--ink); }
+  .guide .rules { font-size: 12px; line-height: 1.5; color: var(--muted); }
+  @media (min-width: 1600px) { .guide ul { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) { .guide li { padding: 10px 12px; font-size: 13px; } .guide .rules { display: none; } }
   .card { background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow-sm); }
 
   /* FASES */
@@ -433,6 +472,8 @@
 </header>
 
 <div class="page">
+  <div class="layout">
+  <div class="board">
   <nav class="card phasebar" aria-label="Fases de la retro">
     <div class="phase-steps" id="phaseSteps"></div>
     <div class="phase-dates" id="phaseDates"></div>
@@ -480,6 +521,10 @@
       <div class="notes" data-list="rocks"></div>
     </section>
   </div>
+  </div>
+
+  <aside class="side" aria-label="Guía y accionables">
+  <section class="card section guide" id="guide" aria-live="polite"></section>
 
   <section class="card section">
     <div style="display:flex;flex-direction:column;gap:4px;">
@@ -535,6 +580,8 @@
       </div>
     </div>
   </section>
+  </aside>
+  </div>
 </div>
 
 <div class="modal-bg" id="modal">
@@ -936,6 +983,7 @@ function renderPhaseBar() {
     ? 'Facilitas tú: pulsa una fase o el botón para avanzar; todos lo verán al momento.'
     : 'Facilita <b>' + escH(sala.facilitatorName || '—') + '</b>, que es quien cambia de fase.';
   renderDates();
+  renderGuide(cur);
   const chip = $('votesChip');
   if (phase() === 'vote') {
     const used = myVoteIds().length, left = MAX_VOTES - used;
@@ -948,6 +996,40 @@ function renderPhaseBar() {
   $('nextPhase').innerHTML = isFac() && next
     ? '<button type="button" class="btn btn-primary" data-act="phase" data-id="' + next.id + '">Pasar a ' + escH(next.label) + ' ' + icon('arrow', 16, 9) + '</button>'
     : '';
+}
+
+const GUIDE = {
+  write: [
+    'Pulsa <b>«Nota»</b> en la zona que toque y escribe <b>una idea por nota</b>, concreta y con un ejemplo real.',
+    'Nadie ve tus notas hasta que se revelen. Con el <b>lápiz</b> y la <b>papelera</b> las corriges o las borras.',
+    '¿Ancla o Rocas? Si <b>ya ha pasado</b> en este periodo, es Ancla; si lo ves venir, Rocas.'
+  ],
+  reveal: [
+    'Cuando te toque, <b>lee tus notas</b> y explica cada una en una frase. Las dudas, al final.',
+    'Si dos notas dicen lo mismo, <b>arrastra una encima de otra</b>. «Separar» deshace el grupo.',
+    'Si una nota encaja mejor en otra zona, arrástrala allí. <b>Agrupad antes de votar.</b>'
+  ],
+  vote: [
+    'Pulsa <b>«Votar»</b> en lo que más importa mejorar. Tienes <b>' + MAX_VOTES + ' votos</b> y puedes poner varios en la misma nota.',
+    'Con <b>«−»</b> retiras un voto para usarlo en otra nota.',
+    'Mientras se vota no se ven los totales: vota por <b>impacto</b>, no por lo más fácil.'
+  ],
+  close: [
+    'Cada zona se ordena de <b>lo más votado</b> a lo menos.',
+    'Proponed entre <b>3 y 5 acciones</b> para lo más votado: qué se hace, quién se encarga y para cuándo.',
+    'Si una acción encaja contigo, <b>ofrécete como responsable</b>.'
+  ]
+};
+let lastGuide = null;
+function renderGuide(cur) {
+  const p = PHASES[cur];
+  if (!p || p.id === lastGuide) return;
+  lastGuide = p.id;
+  $('guide').innerHTML =
+    '<div class="guide-head"><span class="n">' + (cur + 1) + '</span>' +
+    '<div style="display:flex;flex-direction:column;gap:2px;"><span class="eyebrow">Qué hacer ahora</span><h2>' + escH(p.label) + '.</h2></div></div>' +
+    '<ul>' + GUIDE[p.id].map(t => '<li>' + t + '</li>').join('') + '</ul>' +
+    '<p class="rules">Hablamos de situaciones, no de personas · Concreto y con ejemplos · Escuchamos sin interrumpir</p>';
 }
 
 // Solo repinta si cambian las fechas o el rol: así no se cierra el selector de fecha mientras alguien lo usa.
