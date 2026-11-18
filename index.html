@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro del Barco · Product Support ↔ Desarrollo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --wind: #f5d76e;
+    --anchor: #ff7675;
+    --rocks: #b2bec3;
+    --island: #55efc4;
+    --action: #74b9ff;
+    --bg: linear-gradient(180deg, #74c0fc 0%, #a5d8ff 45%, #1864ab 100%);
+    --primary: #0b3d91;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #f1f3f5;
+    color: #212529;
+    line-height: 1.45;
+  }
+  header {
+    background: #0b3d91; color: #fff;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header h1 span { opacity: .8; font-weight: 400; font-size: 13px; display:block; }
+  .sala-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    background: rgba(255,255,255,.14); border-radius: 20px;
+    padding: 3px 10px; font-size: 12px; margin-top: 4px;
+  }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:#adb5bd; display:inline-block; }
+  .live-dot.on { background:#51cf66; box-shadow: 0 0 0 3px rgba(81,207,102,.3); }
+  .live-dot.err { background:#ff6b6b; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .user-chip { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .user-chip img { width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,255,255,.6); }
+  button {
+    border: none; cursor: pointer; padding: 9px 14px;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    background: #fff; color: #0b3d91;
+    transition: transform .1s, box-shadow .15s;
+    font-family: inherit;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.15); }
+  button.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); }
+  button.success { background: #2f9e44; color:#fff; }
+
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; padding: 18px; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+  .steps {
+    background: #fff; border-radius: 14px; padding: 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    height: fit-content; position: sticky; top: 100px;
+  }
+  @media (max-width: 980px) { .steps { position: static; } }
+  .steps h2 { font-size: 15px; margin-bottom: 10px; color:#0b3d91; }
+  .steps ol { padding-left: 18px; font-size: 13px; }
+  .steps ol li { margin-bottom: 8px; }
+  .steps .time { color:#6c757d; font-size: 11px; }
+  .steps .legend { margin-top: 14px; font-size: 12px; }
+  .steps .legend div { display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  .dot { width:12px; height:12px; border-radius: 3px; display:inline-block; }
+
+  .canvas {
+    background: var(--bg); border-radius: 14px; overflow: hidden;
+    position: relative; min-height: 700px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  }
+  .zones {
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+    gap: 14px; padding: 18px; height: 100%; position: relative; z-index: 2;
+  }
+  @media (max-width: 720px) { .zones { grid-template-columns: 1fr; } }
+  .zone {
+    background: rgba(255,255,255,.92); border-radius: 12px; padding: 14px;
+    border-top: 6px solid; display: flex; flex-direction: column; min-height: 280px;
+    transition: outline .15s, background .15s; position: relative;
+  }
+  .zone[data-zone="wind"]   { border-color: var(--wind); }
+  .zone[data-zone="island"] { border-color: var(--island); }
+  .zone[data-zone="anchor"] { border-color: var(--anchor); }
+  .zone[data-zone="rocks"]  { border-color: var(--rocks); }
+  .zone-header { display:flex; align-items:center; gap: 10px; margin-bottom: 10px; }
+  .zone-icon { font-size: 28px; }
+  .zone-title { font-size: 16px; font-weight: 700; }
+  .zone-sub { font-size: 12px; color:#6c757d; margin-top:2px;}
+  .zone-add {
+    border: 1px dashed #adb5bd; background: #fff; color: #495057;
+    padding: 6px 10px; font-size: 12px; margin-left:auto; border-radius: 6px;
+  }
+  .postits { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; flex: 1; }
+  .postit {
+    width: 145px; min-height: 95px; padding: 9px 10px; border-radius: 4px;
+    box-shadow: 2px 4px 7px rgba(0,0,0,.12); font-size: 12px;
+    position: relative; cursor: grab;
+    transform: rotate(var(--rot, -1deg));
+    transition: transform .15s, box-shadow .15s;
+    user-select: none; isolation: isolate;
+  }
+  .postit:hover { transform: rotate(0) scale(1.04); box-shadow: 3px 6px 12px rgba(0,0,0,.18); z-index: 3;}
+  .postit.fresh { animation: pop .5s ease-out; }
+  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: rotate(var(--rot,-1deg)); opacity: 1; } }
+  .postit .author { font-size: 10px; color:#495057; opacity:.8; margin-bottom: 4px; font-weight:600; }
+  .postit .text { white-space: pre-wrap; word-break: break-word; }
+  .postit .actions { display:flex; gap:4px; margin-top: 6px; align-items:center; justify-content: space-between; }
+  .vote {
+    background: rgba(0,0,0,.08); border:none; padding: 2px 7px;
+    border-radius: 12px; font-size: 11px; cursor: pointer; font-weight:600;
+  }
+  .vote:hover { background: rgba(0,0,0,.18); }
+  .del { background: transparent; border:none; cursor:pointer; color: #c92a2a; font-size: 14px; padding: 0 4px; }
+
+  .boat-art {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 260px; height: 180px; z-index: 1; opacity: .9; pointer-events: none;
+  }
+
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    display: none; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-bg.show { display:flex; }
+  .modal {
+    background: #fff; border-radius: 14px; padding: 22px; width: min(440px, 92vw);
+    box-shadow: 0 12px 40px rgba(0,0,0,.3); max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { margin-bottom: 12px; color: #0b3d91; }
+  .modal label { display:block; font-size: 12px; margin-bottom: 4px; color:#495057; font-weight:600;}
+  .modal input, .modal textarea {
+    width:100%; padding: 9px 10px; border: 1px solid #ced4da;
+    border-radius: 6px; font-size: 13px; margin-bottom: 12px; font-family: inherit;
+  }
+  .modal textarea { resize: vertical; min-height: 80px; }
+  .modal-actions { display:flex; justify-content: flex-end; gap: 8px; margin-top: 4px;}
+
+  .actions-section, .tools-section {
+    margin: 18px; background:#fff; border-radius: 14px; padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  }
+  .actions-section h2, .tools-section h2 { color:#0b3d91; margin-bottom: 4px; font-size: 18px; }
+  .actions-section p.lead, .tools-section p.lead { color: #6c757d; font-size: 13px; margin-bottom: 14px;}
+  .action-form { display: grid; grid-template-columns: 2fr 1fr 140px auto; gap: 8px; margin-bottom: 14px; }
+  .action-form input { padding: 9px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; font-family: inherit; }
+  .action-form button { background: var(--action); color: #fff; }
+  .action-list { display:flex; flex-direction: column; gap: 8px; }
+  .action-item {
+    display:grid; grid-template-columns: auto 2fr 1fr 140px auto;
+    gap:8px; align-items:center; background: #f8f9fa; padding: 10px 12px; border-radius: 8px;
+    border-left: 4px solid var(--action); font-size: 13px;
+  }
+  .action-item.done { opacity: .6; text-decoration: line-through; }
+  @media (max-width: 720px) { .action-form, .action-item { grid-template-columns: 1fr; } }
+
+  .empty { color: #adb5bd; font-size: 12px; font-style: italic; padding: 12px 0; }
+  .footer-note { text-align:center; padding: 16px; color:#6c757d; font-size: 12px;}
+
+  .dropzone {
+    border: 2px dashed #74b9ff; border-radius: 10px; padding: 22px;
+    text-align: center; cursor: pointer; transition: background .2s, border-color .2s;
+    color: #495057; font-size: 13px;
+  }
+  .dropzone:hover, .dropzone.dragover { background: #e7f5ff; border-color: #0b3d91; }
+  .dropzone input[type=file] { display: none; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120px);
+    background: #212529; color: #fff; padding: 12px 20px; border-radius: 10px;
+    font-size: 13px; z-index: 200; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    transition: transform .3s ease; max-width: 92vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: #2f9e44; }
+  .toast.warning { background: #e67700; }
+
+  /* LOGIN */
+  #login {
+    position: fixed; inset: 0; z-index: 500;
+    background: linear-gradient(180deg, #74c0fc 0%, #1864ab 100%);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  #login.hide { display: none; }
+  .login-card {
+    background: #fff; border-radius: 16px; padding: 32px; width: min(420px, 100%);
+    text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  .login-card .boat { font-size: 52px; }
+  .login-card h2 { color: #0b3d91; margin: 6px 0 4px; }
+  .login-card p { color: #6c757d; font-size: 13px; margin-bottom: 20px; }
+  .login-card button { background: #0b3d91; color: #fff; padding: 12px 18px; font-size: 14px; }
+  .login-err { color: #c92a2a; font-size: 13px; margin-top: 14px; min-height: 18px; }
+
+  /* DRAG & DROP */
+  .postit.dragging {
+    opacity: .35; transform: rotate(0deg) scale(.95) !important; cursor: grabbing;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1) !important;
+  }
+  .postit.dragging::before, .postit.dragging::after { display: none !important; }
+  .zone.move-target { background: rgba(255,255,255,.99); outline: 3px dashed #0b3d91; outline-offset: -3px; }
+  .zone.move-target::after {
+    content: '➡  Soltar para mover aquí'; position: absolute; top: 8px; right: 12px;
+    background: #0b3d91; color: white; padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; pointer-events: none;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2); animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .postit.merge-target {
+    outline: 3px solid #f59f00; outline-offset: 3px;
+    transform: rotate(0deg) scale(1.08) !important;
+    box-shadow: 0 0 0 4px rgba(245,159,0,.25), 0 10px 26px rgba(245,159,0,.45) !important;
+    z-index: 6;
+  }
+  .postit.merge-target::before, .postit.merge-target::after { display: none; }
+  .drag-indicator {
+    position: fixed; pointer-events: none; background: #212529; color: white;
+    padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700;
+    z-index: 1000; display: none; box-shadow: 0 8px 22px rgba(0,0,0,.4);
+    white-space: nowrap; transition: background .12s;
+  }
+  .drag-indicator.show { display: block; }
+  .drag-indicator.merge { background: #f59f00; }
+  .drag-indicator.move { background: #0b3d91; }
+  .drag-indicator.neutral { background: #495057; opacity: .85; }
+
+  .postit.has-merged::before {
+    content: ''; position: absolute; inset: 0; background: var(--postit-bg, #fff);
+    border-radius: inherit; box-shadow: 2px 4px 7px rgba(0,0,0,.15);
+    transform: rotate(3deg) translate(4px, 4px); z-index: -1; filter: brightness(.95);
+  }
+  .postit.has-merged-3::after {
+    content: ''; position: absolute; inset: 0; background: var(--postit-bg, #fff);
+    border-radius: inherit; box-shadow: 2px 4px 7px rgba(0,0,0,.18);
+    transform: rotate(-4deg) translate(-3px, 6px); z-index: -2; filter: brightness(.9);
+  }
+  .merge-badge {
+    position: absolute; top: -10px; right: -10px; background: #0b3d91; color: white;
+    min-width: 28px; height: 28px; padding: 0 7px; border-radius: 14px;
+    border: 2px solid white; font-size: 12px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,.35); z-index: 4;
+    transition: transform .15s, background .15s; line-height: 1;
+  }
+  .merge-badge::before { content: '🔗'; font-size: 10px; margin-right: 3px; }
+  .merge-badge:hover { transform: scale(1.18); background: #1864ab; }
+
+  .merged-item { padding: 10px 12px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 8px; background: #f8f9fa; }
+  .merged-item.main { border-color: #0b3d91; background: #f8f9ff; }
+  .merged-item-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .merged-item-header .author { font-weight: 700; font-size: 13px; color: #212529; }
+  .merged-item-header .pill {
+    font-size: 10px; padding: 2px 8px; border-radius: 8px; background: #e9ecef; color: #495057;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+  }
+  .merged-item-header .pill.main { background: #0b3d91; color: white; }
+  .merged-item-header .pill.zone { background: #fff; border: 1px solid #ced4da; }
+  .merged-item-text { font-size: 13px; color: #212529; white-space: pre-wrap; word-break: break-word; }
+  .merged-item-footer { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #6c757d; }
+  .merged-item-footer .unmerge {
+    background: transparent; border: 1px solid #ced4da; padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; color: #0b3d91; cursor: pointer; font-weight: 600;
+  }
+  .merged-item-footer .unmerge:hover { background: #e7f5ff; border-color: #74b9ff; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="boat">&#x26F5;</div>
+    <h2>Retro del Barco</h2>
+    <p>Product Support &#x2194; Desarrollo<br>Entra con tu cuenta de Google de Sesame para unirte a la sala.</p>
+    <button id="loginBtn">Entrar con Google</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<header>
+  <h1>&#x26F5; Retro del Barco
+    <span>Product Support &#x2194; Desarrollo &middot; Mejorando lo que llega a los devs</span>
+    <span class="sala-chip"><span class="live-dot" id="liveDot"></span> Sala: <b id="salaName">&mdash;</b></span>
+  </h1>
+  <div class="toolbar">
+    <div class="user-chip" id="userChip"></div>
+    <button id="copyLinkBtn">&#x1F517; Copiar enlace</button>
+    <button class="ghost" id="newSalaBtn">&#x2795; Nueva sala</button>
+    <button id="exportSummaryBtn">&#x1F4C4; Resumen .md</button>
+    <button class="ghost" id="logoutBtn">Salir</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="steps">
+    <h2>&#x1F9ED; C&oacute;mo facilitar la sesi&oacute;n</h2>
+    <ol>
+      <li><b>Comparte el enlace</b> <span class="time">(antes de la reuni&oacute;n)</span><br>Pulsa <b>"&#x1F517; Copiar enlace"</b> y p&aacute;salo al equipo. Cada uno entra con su cuenta de Sesame.</li>
+      <li><b>Preparaci&oacute;n individual</b> <span class="time">(antes o 5 min)</span><br>Cada persona a&ntilde;ade sus post-its. Todos ven los cambios en directo.</li>
+      <li><b>Compartir y agrupar</b> <span class="time">(12 min)</span><br>Cada uno lee los suyos. Arrastra un post-it sobre otro para fusionarlos.</li>
+      <li><b>Votaci&oacute;n</b> <span class="time">(5 min)</span><br>3 votos por persona (bot&oacute;n &#x1F44D; del post-it).</li>
+      <li><b>Accionables</b> <span class="time">(12 min)</span><br>3-5 acciones concretas con responsable y fecha.</li>
+      <li><b>Cierre</b> <span class="time">(5 min)</span><br>Exportar el resumen y compartirlo en el canal.</li>
+    </ol>
+    <div class="legend">
+      <b>Las 4 zonas:</b>
+      <div><span class="dot" style="background:var(--wind)"></span> Viento &rarr; impulsa</div>
+      <div><span class="dot" style="background:var(--anchor)"></span> Ancla &rarr; frena</div>
+      <div><span class="dot" style="background:var(--rocks)"></span> Rocas &rarr; riesgos</div>
+      <div><span class="dot" style="background:var(--island)"></span> Isla &rarr; objetivo ideal</div>
+    </div>
+    <p style="margin-top:14px;font-size:11px;color:#6c757d;">
+      &#x2601;&#xFE0F; Todo se guarda en la nube y se sincroniza en tiempo real. Solo pueden entrar cuentas @sesametime.com.
+    </p>
+  </aside>
+
+  <main class="canvas">
+    <div class="zones">
+      <div class="zone" data-zone="wind">
+        <div class="zone-header">
+          <span class="zone-icon">&#x1F32C;&#xFE0F;</span>
+          <div>
+            <div class="zone-title">Viento &mdash; qu&eacute; nos impulsa</div>
+            <div class="zone-sub">Lo que ya funciona bien entre PS y Devs</div>
+          </div>
+          <button class="zone-add" onclick="openModal('wind')">+ Post-it</button>
+        </div>
+        <div class="postits" data-list="wind"></div>
+      </div>
+
+      <div class="zone" data-zone="island">
+        <div class="zone-header">
+          <span class="zone-icon">&#x1F3DD;&#xFE0F;</span>
+          <div>
+            <div class="zone-title">Isla &mdash; nuestro objetivo</div>
+            <div class="zone-sub">C&oacute;mo queremos que sea la colaboraci&oacute;n ideal</div>
+          </div>
+          <button class="zone-add" onclick="openModal('island')">+ Post-it</button>
+        </div>
+        <div class="postits" data-list="island"></div>
+      </div>
+
+      <div class="zone" data-zone="anchor">
+        <div class="zone-header">
+          <span class="zone-icon">&#x2693;</span>
+          <div>
+            <div class="zone-title">Ancla &mdash; qu&eacute; nos frena</div>
+            <div class="zone-sub">Tickets mal documentados, info incompleta, ruido&hellip;</div>
+          </div>
+          <button class="zone-add" onclick="openModal('anchor')">+ Post-it</button>
+        </div>
+        <div class="postits" data-list="anchor"></div>
+      </div>
+
+      <div class="zone" data-zone="rocks">
+        <div class="zone-header">
+          <span class="zone-icon">&#x1FAA8;</span>
+          <div>
+            <div class="zone-title">Rocas &mdash; riesgos en el horizonte</div>
+            <div class="zone-sub">Lo que puede empeorar si no actuamos</div>
+          </div>
+          <button class="zone-add" onclick="openModal('rocks')">+ Post-it</button>
+        </div>
+        <div class="postits" data-list="rocks"></div>
+      </div>
+    </div>
+
+    <svg class="boat-art" viewBox="0 0 260 180">
+      <polygon points="130,10 130,90 50,90" fill="#fff" opacity=".95"/>
+      <polygon points="130,20 130,90 200,90" fill="#fff" opacity=".8"/>
+      <line x1="130" y1="0" x2="130" y2="100" stroke="#5a3825" stroke-width="3"/>
+      <polygon points="20,100 240,100 215,150 45,150" fill="#8b5a2b"/>
+      <rect x="40" y="155" width="180" height="6" fill="#5a3825"/>
+    </svg>
+  </main>
+</div>
+
+<!-- ACCIONABLES -->
+<section class="actions-section">
+  <h2>&#x2705; Accionables</h2>
+  <p class="lead">Salir de la retro con compromisos claros. Una acci&oacute;n = qu&eacute; + qui&eacute;n + cu&aacute;ndo.</p>
+  <div class="action-form">
+    <input id="actText" placeholder="Acci&oacute;n concreta (ej. plantilla obligatoria de tickets PS&rarr;Devs)">
+    <input id="actOwner" placeholder="Responsable">
+    <input id="actDue" type="date">
+    <button onclick="addAction()">+ A&ntilde;adir</button>
+  </div>
+  <div class="action-list" id="actionList"></div>
+</section>
+
+<!-- IMPORTAR ARCHIVOS ANTIGUOS -->
+<section class="tools-section">
+  <h2>&#x1F4E5; Importar archivos .retro antiguos</h2>
+  <p class="lead">Si alguien prepar&oacute; sus post-its con la versi&oacute;n antigua (sin conexi&oacute;n), arrastra aqu&iacute; sus archivos <code>.retro</code> y se a&ntilde;adir&aacute;n a esta sala. Los duplicados se ignoran.</p>
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept=".retro,.json" multiple>
+    <b>Arrastra archivos .retro aqu&iacute;</b> o haz clic para seleccionarlos
+  </div>
+</section>
+
+<div class="footer-note">&#x26F5; Retro del Barco &middot; Sincronizado en tiempo real con Firebase.</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Nuevo post-it</h3>
+    <label>Tu nombre</label>
+    <input id="pAuthor" placeholder="Ej. Mar&iacute;a">
+    <label>Tu idea</label>
+    <textarea id="pText" placeholder="S&eacute; concreto/a y constructivo/a"></textarea>
+    <input type="hidden" id="pZone">
+    <div class="modal-actions">
+      <button style="color:#495057;border:1px solid #ced4da;background:#fff;" onclick="closeModal()">Cancelar</button>
+      <button class="success" onclick="savePostit()">A&ntilde;adir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mergedModal">
+  <div class="modal" style="width:min(560px,92vw);">
+    <h3 id="mergedModalTitle">&#x1F517; Pins fusionados</h3>
+    <p style="font-size:12px;color:#6c757d;margin-bottom:14px;">Pins agrupados en este post-it. Puedes separarlos individualmente.</p>
+    <div id="mergedList"></div>
+    <div class="modal-actions">
+      <button onclick="closeMergedModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="drag-indicator" id="dragIndicator"></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc,
+         runTransaction, increment, serverTimestamp, writeBatch }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// La config web de Firebase es pública por diseño: la seguridad la dan las reglas de Firestore.
+const firebaseConfig = {
+  apiKey: "AIzaSyCmqs4IP16XoPBjNe_0lCaKDvftNm8duW4",
+  authDomain: "retro-barco.firebaseapp.com",
+  projectId: "retro-barco",
+  storageBucket: "retro-barco.firebasestorage.app",
+  messagingSenderId: "533714326073",
+  appId: "1:533714326073:web:b19349a7b1cf12694933e8"
+};
+const ALLOWED_DOMAIN = "sesametime.com";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const ZONES = {
+  wind:   { name: "Viento (impulsa)" },
+  anchor: { name: "Ancla (frena)" },
+  rocks:  { name: "Rocas (riesgos)" },
+  island: { name: "Isla (objetivo)" }
+};
+
+/* ============ SALA ============ */
+function randomId(n) {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
+  let s = ''; const a = crypto.getRandomValues(new Uint8Array(n));
+  for (const b of a) s += chars[b % chars.length];
+  return s;
+}
+function newSalaId() { return 'retro-' + new Date().toISOString().slice(0,10) + '-' + randomId(6); }
+
+const params = new URLSearchParams(location.search);
+let SALA = (params.get('sala') || '').trim();
+if (!/^[a-z0-9-]{3,80}$/i.test(SALA)) {
+  SALA = newSalaId();
+  params.set('sala', SALA);
+  history.replaceState(null, '', location.pathname + '?' + params.toString());
+}
+document.getElementById('salaName').textContent = SALA;
+const colP = collection(db, 'salas', SALA, 'postits');
+const colA = collection(db, 'salas', SALA, 'actions');
+
+/* ============ STATE ============ */
+let state = { postits: [], actions: [] };
+let user = null;
+let unsubs = [];
+let firstLoad = true;
+const seenIds = new Set();
+let openMergedId = null;
+
+/* ============ UTILS ============ */
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function escH(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function ts(x) { return (x && typeof x.toMillis === 'function') ? x.toMillis() : Date.now(); }
+function fail(err) {
+  console.error(err);
+  const msg = err && err.code === 'permission-denied'
+    ? 'Sin permiso: entra con una cuenta @' + ALLOWED_DOMAIN
+    : 'Error al guardar: ' + (err && err.message ? err.message : err);
+  showToast(msg, 'warning');
+}
+function setLive(status) {
+  document.getElementById('liveDot').className = 'live-dot' + (status ? ' ' + status : '');
+}
+
+/* ============ AUTH ============ */
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ hd: ALLOWED_DOMAIN, prompt: 'select_account' });
+
+document.getElementById('loginBtn').onclick = async () => {
+  document.getElementById('loginErr').textContent = '';
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request')
+      document.getElementById('loginErr').textContent = 'No se pudo iniciar sesión (' + e.code + ')';
+  }
+};
+document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, async u => {
+  unsubs.forEach(f => f()); unsubs = [];
+  if (!u) {
+    user = null;
+    document.getElementById('login').classList.remove('hide');
+    setLive('');
+    return;
+  }
+  const email = (u.email || '').toLowerCase();
+  if (!u.emailVerified || !email.endsWith('@' + ALLOWED_DOMAIN)) {
+    await signOut(auth);
+    document.getElementById('loginErr').textContent = 'Solo se admiten cuentas @' + ALLOWED_DOMAIN + ' (has entrado con ' + email + ').';
+    return;
+  }
+  user = u;
+  document.getElementById('login').classList.add('hide');
+  document.getElementById('userChip').innerHTML =
+    (u.photoURL ? '<img src="' + escH(u.photoURL) + '" alt="" referrerpolicy="no-referrer">' : '') +
+    '<span>' + escH(u.displayName || email) + '</span>';
+  subscribe();
+});
+
+function subscribe() {
+  firstLoad = true;
+  unsubs.push(onSnapshot(colP, snap => {
+    state.postits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    setLive('on');
+    scheduleRender();
+  }, err => { setLive('err'); fail(err); }));
+  unsubs.push(onSnapshot(colA, snap => {
+    state.actions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderActions();
+  }, err => { setLive('err'); fail(err); }));
+}
+
+/* ============ HEADER ACTIONS ============ */
+document.getElementById('copyLinkBtn').onclick = async () => {
+  try { await navigator.clipboard.writeText(location.href); showToast('Enlace copiado. Pásalo al equipo', 'success'); }
+  catch (_) { prompt('Copia este enlace:', location.href); }
+};
+document.getElementById('newSalaBtn').onclick = () => {
+  if (!confirm('¿Crear una sala nueva y vacía? Esta seguirá disponible con su enlace.')) return;
+  location.search = '?sala=' + newSalaId();
+};
+
+/* ============ POST-ITS ============ */
+function openModal(zone) {
+  document.getElementById('pZone').value = zone;
+  document.getElementById('pAuthor').value = localStorage.getItem('retroBarco_user') || (user && user.displayName) || '';
+  document.getElementById('pText').value = '';
+  document.getElementById('modalTitle').textContent = 'Nuevo post-it · ' + ZONES[zone].name;
+  document.getElementById('modal').classList.add('show');
+  setTimeout(() => document.getElementById('pText').focus(), 50);
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+function savePostit() {
+  const zone = document.getElementById('pZone').value;
+  const author = document.getElementById('pAuthor').value.trim() || (user && user.displayName) || 'Anónimo';
+  const text = document.getElementById('pText').value.trim();
+  if (!text) { alert('Escribe la idea antes de añadirla.'); return; }
+  try { localStorage.setItem('retroBarco_user', author); } catch (_) {}
+  closeModal();
+  addDoc(colP, {
+    zone, author, text, votes: 0, merged: [],
+    createdBy: user.uid, createdAt: serverTimestamp()
+  }).catch(fail);
+}
+
+function vote(id) { updateDoc(doc(colP, id), { votes: increment(1) }).catch(fail); }
+function delPostit(id) {
+  if (!confirm('¿Eliminar este post-it? Se borra para todos.')) return;
+  deleteDoc(doc(colP, id)).catch(fail);
+}
+
+/* ============ RENDER ============ */
+let pendingRender = false;
+function scheduleRender() {
+  if (dragData) { pendingRender = true; return; }
+  render();
+}
+
+function render() {
+  pendingRender = false;
+  Object.keys(ZONES).forEach(z => {
+    const list = document.querySelector('[data-list="' + z + '"]');
+    list.innerHTML = '';
+    const items = state.postits.filter(p => p.zone === z)
+      .sort((a, b) => (b.votes || 0) - (a.votes || 0) || ts(a.createdAt) - ts(b.createdAt));
+    if (items.length === 0) list.innerHTML = '<div class="empty">Aún no hay post-its · pulsa &quot;+ Post-it&quot;</div>';
+    items.forEach((p, i) => {
+      const el = document.createElement('div');
+      const mergedCount = 1 + ((p.merged && p.merged.length) || 0);
+      const classes = ['postit'];
+      if (mergedCount >= 2) classes.push('has-merged');
+      if (mergedCount >= 3) classes.push('has-merged-3');
+      if (!firstLoad && !seenIds.has(p.id)) classes.push('fresh');
+      el.className = classes.join(' ');
+      el.dataset.zone = z;
+      el.dataset.id = p.id;
+      el.draggable = true;
+      el.style.setProperty('--rot', ((i % 3) - 1) + 'deg');
+      const bg = getMergedColor(z, mergedCount);
+      el.style.setProperty('--postit-bg', bg);
+      el.style.background = bg;
+      el.innerHTML =
+        (mergedCount > 1 ? '<button class="merge-badge" title="Ver ' + mergedCount + ' pins fusionados" onclick="event.stopPropagation(); openMergedModal(\'' + p.id + '\')">' + mergedCount + '</button>' : '') +
+        '<div class="author">' + escH(p.author) + '</div>' +
+        '<div class="text">' + escH(p.text) + '</div>' +
+        '<div class="actions">' +
+          '<button class="vote" onclick="event.stopPropagation(); vote(\'' + p.id + '\')">&#x1F44D; ' + (p.votes || 0) + '</button>' +
+          '<button class="del" title="Eliminar" onclick="event.stopPropagation(); delPostit(\'' + p.id + '\')">&#x2715;</button>' +
+        '</div>';
+      attachPostitDragHandlers(el, p);
+      list.appendChild(el);
+    });
+  });
+  state.postits.forEach(p => seenIds.add(p.id));
+  firstLoad = false;
+  attachZoneDragHandlers();
+  if (openMergedId) openMergedModal(openMergedId, true);
+}
+
+/* ============ ACCIONABLES ============ */
+function addAction() {
+  const text = document.getElementById('actText').value.trim();
+  const owner = document.getElementById('actOwner').value.trim();
+  const due = document.getElementById('actDue').value;
+  if (!text) { alert('Describe la acción.'); return; }
+  addDoc(colA, { text, owner, due, done: false, createdBy: user.uid, createdAt: serverTimestamp() }).catch(fail);
+  document.getElementById('actText').value = '';
+  document.getElementById('actOwner').value = '';
+  document.getElementById('actDue').value = '';
+}
+function toggleAction(id) {
+  const a = state.actions.find(a => a.id === id);
+  if (a) updateDoc(doc(colA, id), { done: !a.done }).catch(fail);
+}
+function delAction(id) {
+  if (!confirm('¿Eliminar este accionable?')) return;
+  deleteDoc(doc(colA, id)).catch(fail);
+}
+function renderActions() {
+  const list = document.getElementById('actionList');
+  list.innerHTML = '';
+  if (state.actions.length === 0) {
+    list.innerHTML = '<div class="empty">Aún no hay accionables. Defínelos al final de la retro.</div>';
+    return;
+  }
+  state.actions.slice().sort((a, b) => ts(a.createdAt) - ts(b.createdAt)).forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'action-item' + (a.done ? ' done' : '');
+    el.innerHTML =
+      '<input type="checkbox"' + (a.done ? ' checked' : '') + ' onchange="toggleAction(\'' + a.id + '\')">' +
+      '<div>' + escH(a.text) + '</div>' +
+      '<div>' + (a.owner ? '&#x1F464; ' + escH(a.owner) : '<span style="color:#adb5bd">sin responsable</span>') + '</div>' +
+      '<div>' + (a.due ? '&#x1F4C5; ' + escH(a.due) : '<span style="color:#adb5bd">sin fecha</span>') + '</div>' +
+      '<button class="del" onclick="delAction(\'' + a.id + '\')">&#x2715;</button>';
+    list.appendChild(el);
+  });
+}
+
+/* ============ IMPORTAR .retro ANTIGUOS ============ */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+dropzone.addEventListener('dragover', e => { if (dragData) return; e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  if (dragData) return;
+  e.preventDefault(); dropzone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+async function handleFiles(files) {
+  const existing = new Set(state.postits.map(p => p.id));
+  state.postits.forEach(p => (p.merged || []).forEach(m => m.id && existing.add(m.id)));
+  let added = 0, skipped = 0; const authors = new Set();
+  const batch = writeBatch(db);
+  for (const file of Array.from(files)) {
+    try {
+      const data = JSON.parse(await file.text());
+      if (data._type !== 'retro-barco-postits' || !Array.isArray(data.postits)) {
+        showToast(file.name + ': formato no válido', 'warning'); continue;
+      }
+      if (data.author) authors.add(data.author);
+      data.postits.forEach(p => {
+        if (!p || !p.text || !ZONES[p.zone]) return;
+        const id = /^[A-Za-z0-9_-]{1,100}$/.test(p.id || '') ? p.id : null;
+        if (id && existing.has(id)) { skipped++; return; }
+        const ref = id ? doc(colP, id) : doc(colP);
+        existing.add(ref.id);
+        batch.set(ref, {
+          zone: p.zone, author: String(p.author || data.author || 'Anónimo'), text: String(p.text),
+          votes: Number(p.votes) || 0,
+          merged: Array.isArray(p.merged) ? p.merged.map(m => ({
+            id: m.id || '', author: String(m.author || ''), text: String(m.text || ''),
+            originZone: ZONES[m.originZone] ? m.originZone : p.zone, votes: Number(m.votes) || 0
+          })) : [],
+          createdBy: user.uid, createdAt: serverTimestamp(), importedFrom: file.name
+        });
+        added++;
+      });
+    } catch (e) { showToast(file.name + ': error al leer el archivo', 'warning'); }
+  }
+  if (!added) { if (skipped) showToast('Sin post-its nuevos · ' + skipped + ' duplicados ignorados', 'warning'); return; }
+  try {
+    await batch.commit();
+    showToast('Importados ' + added + ' post-its' + (authors.size ? ' de ' + Array.from(authors).join(', ') : '') +
+      (skipped ? ' · ' + skipped + ' duplicados ignorados' : ''), 'success');
+  } catch (e) { fail(e); }
+}
+
+/* ============ RESUMEN .md ============ */
+function exportSummaryMd() {
+  let md = '# Retro del Barco · Product Support ↔ Desarrollo\n_' + new Date().toLocaleDateString('es-ES') + ' · sala ' + SALA + '_\n\n';
+  Object.entries(ZONES).forEach(([z, info]) => {
+    md += '## ' + info.name + '\n';
+    const items = state.postits.filter(p => p.zone === z).sort((a, b) => (b.votes || 0) - (a.votes || 0));
+    if (!items.length) md += '_(vacío)_\n';
+    items.forEach(p => {
+      md += '- (' + (p.votes || 0) + ' 👍) **' + p.author + '**: ' + p.text + '\n';
+      (p.merged || []).forEach(m => { md += '  - **' + m.author + '**: ' + m.text + '\n'; });
+    });
+    md += '\n';
+  });
+  md += '## ✅ Accionables\n';
+  if (!state.actions.length) md += '_(vacío)_\n';
+  state.actions.slice().sort((a, b) => ts(a.createdAt) - ts(b.createdAt)).forEach(a => {
+    md += '- [' + (a.done ? 'x' : ' ') + '] ' + a.text + (a.owner ? ' · 👤 ' + a.owner : '') + (a.due ? ' · 📅 ' + a.due : '') + '\n';
+  });
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'retro-barco-resumen-' + new Date().toISOString().slice(0, 10) + '.md';
+  a.click();
+}
+document.getElementById('exportSummaryBtn').onclick = exportSummaryMd;
+
+/* ============ DRAG & DROP + MERGE ============ */
+const ZONE_COLORS = {
+  wind:   { h: 47,  s: 87,  l: 70 },
+  anchor: { h: 0,   s: 100, l: 73 },
+  rocks:  { h: 198, s: 12,  l: 73 },
+  island: { h: 163, s: 83,  l: 64 }
+};
+function getMergedColor(zone, count) {
+  const c = ZONE_COLORS[zone];
+  if (!c) return '';
+  const merges = Math.max(0, (count || 1) - 1);
+  const newS = Math.min(c.s + Math.min(merges * 14, 55), 100);
+  const newL = Math.max(c.l - Math.min(merges * 3, 22), 38);
+  return 'hsl(' + c.h + ', ' + newS + '%, ' + newL + '%)';
+}
+
+let dragData = null;
+function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function cleanupDragVisuals() {
+  document.querySelectorAll('.merge-target').forEach(e => e.classList.remove('merge-target'));
+  document.querySelectorAll('.move-target').forEach(e => e.classList.remove('move-target'));
+}
+function setIndicator(e, text, type) {
+  const ind = document.getElementById('dragIndicator');
+  ind.textContent = text;
+  ind.className = 'drag-indicator show ' + (type || '');
+  ind.style.left = (e.clientX + 16) + 'px';
+  ind.style.top = (e.clientY + 18) + 'px';
+}
+function endDrag() {
+  cleanupDragVisuals();
+  document.getElementById('dragIndicator').className = 'drag-indicator';
+  dragData = null;
+  if (pendingRender) render();
+}
+
+function attachPostitDragHandlers(el, p) {
+  el.addEventListener('dragstart', e => {
+    dragData = { id: p.id, zone: p.zone };
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'copyMove';
+    try { e.dataTransfer.setData('text/plain', p.id); } catch (_) {}
+    const ind = document.getElementById('dragIndicator');
+    ind.textContent = 'Suelta sobre una zona o un pin';
+    ind.className = 'drag-indicator show neutral';
+  });
+  el.addEventListener('dragend', () => { el.classList.remove('dragging'); endDrag(); });
+  el.addEventListener('dragover', e => {
+    if (!dragData || dragData.id === p.id) return;
+    e.preventDefault(); e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    cleanupDragVisuals();
+    el.classList.add('merge-target');
+    setIndicator(e, 'Fusionar con: "' + truncate(p.text, 30) + '"', 'merge');
+  });
+  el.addEventListener('drop', e => {
+    if (!dragData || dragData.id === p.id) return;
+    e.preventDefault(); e.stopPropagation();
+    const src = dragData.id;
+    endDrag();
+    mergePins(src, p.id);
+  });
+}
+
+function attachZoneDragHandlers() {
+  document.querySelectorAll('.zone').forEach(zoneEl => {
+    if (zoneEl._dragSetup) return;
+    zoneEl._dragSetup = true;
+    const z = zoneEl.dataset.zone;
+    zoneEl.addEventListener('dragover', e => {
+      if (!dragData) return;
+      if (e.target.closest && e.target.closest('.postit')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      cleanupDragVisuals();
+      if (dragData.zone !== z) {
+        zoneEl.classList.add('move-target');
+        setIndicator(e, 'Mover a ' + ZONES[z].name, 'move');
+      } else {
+        setIndicator(e, 'Misma zona — suelta sobre un pin para fusionar', 'neutral');
+      }
+    });
+    zoneEl.addEventListener('drop', e => {
+      if (!dragData) return;
+      if (e.target.closest && e.target.closest('.postit')) return;
+      e.preventDefault();
+      const d = dragData;
+      endDrag();
+      if (d.zone !== z) movePin(d.id, z);
+    });
+  });
+}
+
+document.addEventListener('dragover', e => {
+  if (!dragData) return;
+  const ind = document.getElementById('dragIndicator');
+  ind.style.left = (e.clientX + 16) + 'px';
+  ind.style.top = (e.clientY + 18) + 'px';
+});
+
+async function mergePins(sourceId, targetId) {
+  if (sourceId === targetId) return;
+  try {
+    const total = await runTransaction(db, async tx => {
+      const sRef = doc(colP, sourceId), tRef = doc(colP, targetId);
+      const s = await tx.get(sRef), t = await tx.get(tRef);
+      if (!s.exists() || !t.exists()) throw new Error('Alguien ha cambiado estos post-its; inténtalo de nuevo');
+      const sd = s.data(), td = t.data();
+      const sChildren = sd.merged || [];
+      const childVotes = sChildren.reduce((n, m) => n + (m.votes || 0), 0);
+      const merged = (td.merged || []).concat([{
+        id: s.id, author: sd.author, text: sd.text, originZone: sd.zone,
+        votes: Math.max(0, (sd.votes || 0) - childVotes)
+      }], sChildren);
+      tx.update(tRef, { merged, votes: (td.votes || 0) + (sd.votes || 0) });
+      tx.delete(sRef);
+      return 1 + merged.length;
+    });
+    showToast('Pins fusionados (' + total + ' en total)', 'success');
+  } catch (e) { fail(e); }
+}
+
+function movePin(id, newZone) {
+  updateDoc(doc(colP, id), { zone: newZone })
+    .then(() => showToast('Movido a ' + ZONES[newZone].name, 'success'))
+    .catch(fail);
+}
+
+function openMergedModal(id, refreshOnly) {
+  const p = state.postits.find(p => p.id === id);
+  if (!p || !p.merged || !p.merged.length) { if (refreshOnly) closeMergedModal(); return; }
+  openMergedId = id;
+  document.getElementById('mergedModalTitle').textContent = '🔗 Pins fusionados (' + (1 + p.merged.length) + ')';
+  const list = document.getElementById('mergedList');
+  list.innerHTML = '';
+  const main = document.createElement('div');
+  main.className = 'merged-item main';
+  main.innerHTML =
+    '<div class="merged-item-header"><span class="author">' + escH(p.author) + '</span>' +
+    '<span class="pill main">Principal</span><span class="pill zone">' + escH(ZONES[p.zone].name) + '</span></div>' +
+    '<div class="merged-item-text">' + escH(p.text) + '</div>' +
+    '<div class="merged-item-footer"><span>👍 ' + (p.votes || 0) + ' votos acumulados</span></div>';
+  list.appendChild(main);
+  p.merged.forEach((m, idx) => {
+    const it = document.createElement('div');
+    it.className = 'merged-item';
+    const fromOther = m.originZone && m.originZone !== p.zone && ZONES[m.originZone];
+    it.innerHTML =
+      '<div class="merged-item-header"><span class="author">' + escH(m.author) + '</span>' +
+      (fromOther ? '<span class="pill zone">de ' + escH(ZONES[m.originZone].name) + '</span>' : '') + '</div>' +
+      '<div class="merged-item-text">' + escH(m.text) + '</div>' +
+      '<div class="merged-item-footer"><span>👍 ' + (m.votes || 0) + '</span>' +
+      '<button class="unmerge" onclick="unmergePin(\'' + p.id + '\', ' + idx + ')">↩ Separar</button></div>';
+    list.appendChild(it);
+  });
+  document.getElementById('mergedModal').classList.add('show');
+}
+function closeMergedModal() {
+  openMergedId = null;
+  document.getElementById('mergedModal').classList.remove('show');
+}
+
+async function unmergePin(parentId, mergedIdx) {
+  try {
+    await runTransaction(db, async tx => {
+      const pRef = doc(colP, parentId);
+      const snap = await tx.get(pRef);
+      if (!snap.exists()) throw new Error('El post-it ya no existe');
+      const pd = snap.data();
+      const merged = (pd.merged || []).slice();
+      const m = merged.splice(mergedIdx, 1)[0];
+      if (!m) throw new Error('Ese pin ya se ha separado');
+      tx.update(pRef, { merged, votes: Math.max(0, (pd.votes || 0) - (m.votes || 0)) });
+      const newRef = /^[A-Za-z0-9_-]{1,100}$/.test(m.id || '') ? doc(colP, m.id) : doc(colP);
+      tx.set(newRef, {
+        zone: ZONES[m.originZone] ? m.originZone : pd.zone,
+        author: m.author || 'Anónimo', text: m.text || '', votes: m.votes || 0, merged: [],
+        createdBy: user.uid, createdAt: serverTimestamp()
+      });
+    });
+    showToast('Pin separado', 'success');
+  } catch (e) { fail(e); }
+}
+
+document.getElementById('mergedModal').addEventListener('click', function (e) { if (e.target === this) closeMergedModal(); });
+document.getElementById('modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeMergedModal(); }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && document.getElementById('modal').classList.contains('show')) savePostit();
+});
+
+// Los handlers inline (onclick="...") necesitan estas funciones en window
+Object.assign(window, {
+  openModal, closeModal, savePostit, vote, delPostit,
+  addAction, toggleAction, delAction,
+  openMergedModal, closeMergedModal, unmergePin
+});
+
+render();
+renderActions();
+</script>
+</body>
+</html>
